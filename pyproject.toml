@@ -1,0 +1,160 @@
+[project]
+name = "xsectional-ranker"
+version = "0.0.0"
+description = "Cross-sectional, market-neutral, intraday long-short ranker on NSE equities. Honest-null research program; sibling to intraday-strategy-lab. Research-only."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+classifiers = [
+    "Private :: Do Not Upload",
+    "Programming Language :: Python :: 3.11",
+]
+
+# Runtime dependencies (Phase 0).
+#
+# The frozen vendored harness (src/vendored/lab, Deep Dive 03) imports ONLY
+# numpy + scipy — these two are pinned to the EXACT versions the predecessor
+# resolved at commit 0c5c592 under Python 3.11 (see src/vendored/VENDORED_FROM.md,
+# Check 4). Golden-master bit-for-bit reconciliation is only meaningful against a
+# locked numeric stack, so these are `==`, not floors, and uv.lock is committed.
+#
+# pyyaml/structlog/tzdata support config + logging scaffolding (new Layer, not
+# harness). TA-Lib / pandas / pyarrow / kiteconnect are deliberately ABSENT: the
+# feature primitives that need them are deferred to Phase 1 (they have no call
+# site yet — Completion Standard (a)).
+dependencies = [
+    "numpy==2.4.6",       # EXACT pin — frozen harness numeric core (Deep Dive 03 Check 4)
+    "scipy==1.17.1",      # EXACT pin — normal CDF/PPF, skew/kurtosis for DSR/PSR/PBO
+    "pyyaml>=6.0.1",      # layered YAML config loader
+    "structlog>=24.1.0",  # structured logging (IST, correlation IDs, redaction)
+    "tzdata>=2024.1",     # IANA tz database for zoneinfo IST on Windows
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6.0",
+    "black>=24.8.0",
+    "mypy>=1.11.0",
+    "pytest>=8.3.0",
+    "pytest-cov>=5.0.0",
+    "pre-commit>=3.8.0",
+    "types-PyYAML>=6.0.12",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# The new package plus the frozen vendored `lab` subtree, so `import lab`
+# resolves everywhere `xsranker` is importable (tests, scripts, the adapter) —
+# mirroring how the predecessor installs `lab`. The freeze is enforced by the
+# hash tripwire + freeze-boundary grep + lint/type exclusion, never by hiding it
+# from the path. The vendored bytes are still verified in place (Deep Dive 03).
+packages = ["src/xsranker", "src/vendored/lab"]
+# Editable installs must expose BOTH roots so `import lab` (from src/vendored)
+# resolves alongside `import xsranker` (from src).
+dev-mode-dirs = ["src", "src/vendored"]
+
+# --------------------------------------------------------------------------- #
+# ruff — linter (formatting delegated to black)                               #
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+# src/vendored is FROZEN and byte-identical to the predecessor (Deep Dive 03);
+# it is graded by golden masters + ported tests, never re-linted here.
+extend-exclude = ["src/vendored", "tests/vendored_unit", "notebooks"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # flake8-bugbear
+    "C4",        # flake8-comprehensions
+    "SIM",       # flake8-simplify
+    "PTH",       # flake8-use-pathlib
+    "TID",       # flake8-tidy-imports
+    "PIE",       # flake8-pie
+    "ERA",       # eradicate — no commented-out code
+    "S",         # flake8-bandit
+    "D",         # pydocstyle — docstrings on public API
+    "RUF",       # ruff-specific
+]
+ignore = ["E501", "D105", "D107"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests do not need docstrings and legitimately use asserts, fake secrets, tmp
+# paths, and subprocess (machinery-removal falsification) — S/D checks are noise.
+"tests/**/*.py" = ["D", "S"]
+# The golden generator is verification tooling (reaches into vendored internals
+# by design); docstring/bandit rules that suit public API are noise here.
+"scripts/**/*.py" = ["D", "S"]
+
+# --------------------------------------------------------------------------- #
+# black — formatter                                                           #
+# --------------------------------------------------------------------------- #
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = "src/vendored|tests/vendored_unit|notebooks"
+
+# --------------------------------------------------------------------------- #
+# mypy — strict on OUR code; the frozen vendored tree is not re-graded         #
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src:src/vendored"
+# Grade the new package + tests. The vendored subtree is excluded from grading
+# (it is frozen, byte-identical, and was mypy-strict-clean at the predecessor
+# pin); its imports still resolve via mypy_path so the adapter is typed against
+# real signatures.
+files = ["src/xsranker", "tests", "scripts"]
+strict = true
+warn_unreachable = true
+enable_error_code = ["redundant-expr", "possibly-undefined", "truthy-bool"]
+exclude = ["src/vendored/", "tests/vendored_unit/", "notebooks/"]
+
+[[tool.mypy.overrides]]
+# The frozen harness is verified by golden masters + ported tests, not re-typed
+# here. Resolve its symbols for the adapter, but do not report errors inside it.
+module = ["lab.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+# scipy ships incomplete inline types; skip following it so calls are Any at the
+# boundary rather than "untyped call" errors. Our signatures stay typed.
+module = ["scipy", "scipy.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+# --------------------------------------------------------------------------- #
+# pytest                                                                       #
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --strict-markers --strict-config"
+testpaths = ["tests"]
+# `lab` resolves from src/vendored (frozen); `xsranker` from src; "." makes the
+# `scripts` package (golden generator, boundary/hash checks) importable in tests.
+pythonpath = ["src", "src/vendored", "."]
+markers = [
+    "golden: bit-for-bit golden-master reconciliation (requires OMP_NUM_THREADS=1)",
+    "falsification: machinery-removal — asserts a certifying test goes red when vendored code is stubbed",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["xsranker"]
+
+[tool.coverage.report]
+show_missing = true

@@ -1,0 +1,49 @@
+# Pre-commit: the same gate CI enforces, run locally before every commit.
+# The frozen vendored tree (src/vendored) is excluded from ruff/black/mypy — it
+# is byte-identical to the predecessor and graded by golden masters, not lint —
+# but its integrity IS enforced by the vendored-hash tripwire and freeze-boundary
+# hooks below (Deep Dive 03).
+default_language_version:
+  python: python3.11
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^src/vendored/
+      - id: ruff-format
+        # formatting is owned by black; use ruff only as linter here
+        stages: [manual]
+
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        exclude: ^src/vendored/
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: ["numpy==2.4.6", "types-PyYAML>=6.0.12"]
+        exclude: ^(src/vendored/|notebooks/)
+        args: [--config-file=pyproject.toml]
+
+  - repo: local
+    hooks:
+      # Tripwire: fail if any frozen vendored file drifts from its recorded hash.
+      - id: vendored-hash-tripwire
+        name: vendored hash tripwire (frozen harness integrity)
+        entry: python scripts/check_vendored_hashes.py
+        language: system
+        files: ^src/vendored/
+        pass_filenames: false
+      # Freeze boundary: no `lab.` import outside the adapter in new source.
+      - id: freeze-boundary
+        name: freeze boundary (only HarnessAdapter may import lab.*)
+        entry: python scripts/check_freeze_boundary.py
+        language: system
+        files: ^src/xsranker/.*\.py$
+        pass_filenames: false

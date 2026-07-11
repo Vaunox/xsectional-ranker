@@ -1,0 +1,17 @@
+# Program-wide settings (Phase 0 baseline).
+#
+# Business thresholds that must be committed blind before the first run — k,
+# gross-exposure floor, null draws N, liquidity floor, null-percentile pass bar
+# — are NOT here yet; they are frozen at implementation (docs/PROGRESS.md), not
+# in Phase 0.
+
+logging:
+  level: INFO
+  renderer: console
+
+# Master determinism seed for every stochastic harness path (CPCV fold order,
+# robustness Monte-Carlo). Config, logged, and frozen into the golden fixtures
+# so two runs — here and at the predecessor — produce identical output
+# (Deep Dive 03, Check 4). Change it and the golden RNG fixture must be
+# regenerated.
+seed: 20260711

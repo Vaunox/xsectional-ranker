@@ -1,0 +1,48 @@
+{
+  "inputs": {
+    "cost_config": {
+      "brokerage": {
+        "cap": 20.0,
+        "rate": 0.0003
+      },
+      "exchange_txn": {
+        "rate": 2.97e-05
+      },
+      "gst": {
+        "rate": 0.18
+      },
+      "sebi_turnover": {
+        "rate": 1e-06
+      },
+      "slippage": {
+        "base_rate": 0.0005,
+        "impact_coefficient": 0.002,
+        "participation_cap": 0.1,
+        "stress_multiplier": 3.0
+      },
+      "stamp": {
+        "buy_rate": 3e-05
+      },
+      "stt": {
+        "sell_rate": 0.00025
+      }
+    },
+    "notional": 100000.0
+  },
+  "meta": {
+    "generated_by": "scripts/generate_goldens.py",
+    "note": "Birth in predecessor repo @ pinned SHA; verify in this repo (Check 2).",
+    "numpy": "2.4.6",
+    "predecessor_sha": "0c5c592b9bc80525625597906cdaf8d7f203bb13",
+    "python": "3.11.9",
+    "scipy": "1.17.1"
+  },
+  "name": "round_trip_cost",
+  "outputs": {
+    "round_trip_cost": 182.4452,
+    "round_trip_cost_fraction": 0.001824452,
+    "round_trip_cost_fraction_participation_5pct": 0.0027188791909999155,
+    "round_trip_cost_fraction_stressed": 0.003824452,
+    "slippage_rate_at_cap": 0.0011324555320336759
+  }
+}

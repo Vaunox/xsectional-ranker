@@ -1,0 +1,25 @@
+{
+  "inputs": {
+    "benchmark_sharpe": 0.0,
+    "effective_trials": 7.0,
+    "kurtosis": 4.8,
+    "n": 480,
+    "observed_sharpe": 0.145,
+    "skew": -0.35,
+    "trial_sharpe_std": 0.06
+  },
+  "meta": {
+    "generated_by": "scripts/generate_goldens.py",
+    "note": "Birth in predecessor repo @ pinned SHA; verify in this repo (Check 2).",
+    "numpy": "2.4.6",
+    "predecessor_sha": "0c5c592b9bc80525625597906cdaf8d7f203bb13",
+    "python": "3.11.9",
+    "scipy": "1.17.1"
+  },
+  "name": "dsr_known_effective_n",
+  "outputs": {
+    "deflated_sharpe_ratio": 0.9043918416624468,
+    "expected_max_sharpe": 0.0832064676812496,
+    "probabilistic_sharpe_ratio": 0.9989184782070436
+  }
+}

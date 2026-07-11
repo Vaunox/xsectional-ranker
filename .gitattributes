@@ -1,0 +1,15 @@
+# Enforce LF everywhere, on every platform and in CI, regardless of core.autocrlf.
+#
+# This is load-bearing, not cosmetic: the frozen vendored harness under
+# src/vendored/ is byte-identical to the predecessor blobs (LF), and the CI hash
+# tripwire (src/vendored/vendored_hashes.txt) is computed over those LF bytes. If a
+# Windows checkout rewrote them to CRLF, every recorded SHA-256 would mismatch and
+# the tripwire would false-fire on a clean clone. Golden fixtures must likewise stay
+# byte-stable. So: normalize all text to LF in the repo and on checkout.
+* text=auto eol=lf
+
+# Explicit, belt-and-suspenders, for the load-bearing paths:
+src/vendored/** text eol=lf
+tests/golden/*.json text eol=lf
+*.py text eol=lf
+uv.lock text eol=lf

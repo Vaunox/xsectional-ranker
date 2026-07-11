@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Single-thread BLAS/OpenMP so golden-master reconciliation is order-deterministic
+# and bit-for-bit (Deep Dive 03, Check 4) — no cross-run reduction drift.
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
+
+jobs:
+  gate0:
+    # Run on the platform the golden masters were birthed against (Windows / the
+    # predecessor's pinned env), so bit-for-bit reconciliation is apples-to-apples.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync the locked, pinned environment
+        # --frozen: install exactly what uv.lock pins (numpy 2.4.6 / scipy 1.17.1,
+        # Python 3.11) — the determinism lock. Fails if uv.lock is stale.
+        run: uv sync --frozen
+
+      # --- freeze tripwires (fail before anything else can rely on the harness) --
+      - name: Vendored-hash tripwire (frozen harness integrity)
+        run: uv run python scripts/check_vendored_hashes.py
+
+      - name: Freeze boundary (only the adapter imports lab.*)
+        run: uv run python scripts/check_freeze_boundary.py
+
+      # --- static gate ---------------------------------------------------------
+      - name: ruff
+        run: uv run ruff check .
+
+      - name: black
+        run: uv run black --check .
+
+      - name: mypy (strict)
+        run: uv run mypy
+
+      # --- verification gate (Checks 1-4) --------------------------------------
+      # The full suite: ported predecessor unit tests (Check 1), golden-master
+      # reconciliation (Check 2), machinery-removal falsification (Check 3), and
+      # the determinism lock (Check 4).
+      - name: pytest (harness verification gate)
+        run: uv run pytest

@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+.env
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# uv.lock is COMMITTED (Deep Dive 03 Check 4 — determinism lock). Do not ignore it.
+
+# Secrets / tokens / credentials (none in Phase 0, but never commit them)
+secrets/
+*.token
+*.pem
+*.key
+.kite_token
+kite_access_token*
+
+# Research data caches — never committed; acquired per-phase (Kite historical,
+# point-in-time universe). Data is reconstructed, not versioned here.
+data/
+*.parquet
+*.duckdb
+*.sqlite
+*.feather
+*.h5
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
