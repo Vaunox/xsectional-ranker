@@ -12,6 +12,16 @@ provenance noted per field — they are NOT new policy:
   per-arm false-positive tolerance (the null-percentile derivation).
 * ``cpcv_median_min = 0.0`` / ``positive_fraction_min = 0.5`` — sign criteria (the
   median path positive; a majority of finite paths positive).
+* ``absolute_net_min = 0.0`` — the absolute-economics bar (added 2026-07-12, post the
+  World-B ruling). Beat-random is NECESSARY BUT NOT SUFFICIENT: an arm can beat a
+  cost-bled random book on the excess-over-null stream (real selection alpha) yet still
+  LOSE money net of cost. This bar requires the arm's median daily ABSOLUTE net return
+  (per cost bound) to clear zero — it must make money net of cost, not merely beat
+  random. Zero is the un-arguable break-even line, not outcome-tuned; and because Phase-1
+  results are survivorship-inflated UPPER bounds, clearing it is necessary-not-sufficient
+  (true OOS net is lower). It is a per-bound binding criterion, so it participates in the
+  cost corridor exactly like the others (net-negative optimistic ⇒ DEAD; positive
+  optimistic / negative pessimistic ⇒ L2_TRIGGER).
 
 The ``near_margin_*`` bands drive STOP-and-flag: a binding criterion within its band
 of the bar is NEAR_THRESHOLD (operator rules), never a silent PASS/KILL at the margin.
@@ -35,9 +45,11 @@ class GateThresholds:
     pbo_max: float
     cpcv_median_min: float
     positive_fraction_min: float
+    absolute_net_min: float  # beat-random is necessary; this real-economics bar makes it sufficient
     near_margin_percentile: float
     near_margin_prob: float
     near_margin_sharpe: float
+    near_margin_net: float
 
 
 def _req(m: Mapping[str, Any], key: str) -> Any:
@@ -65,9 +77,11 @@ def load_gate_thresholds(settings: Settings) -> GateThresholds:
         pbo_max=float(_req(g, "pbo_max")),
         cpcv_median_min=float(_req(g, "cpcv_median_min")),
         positive_fraction_min=float(_req(g, "positive_fraction_min")),
+        absolute_net_min=float(_req(g, "absolute_net_min")),
         near_margin_percentile=float(_req(g, "near_margin_percentile")),
         near_margin_prob=float(_req(g, "near_margin_prob")),
         near_margin_sharpe=float(_req(g, "near_margin_sharpe")),
+        near_margin_net=float(_req(g, "near_margin_net")),
     )
 
 

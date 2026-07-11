@@ -1,4 +1,4 @@
-"""Per-arm gate evaluation — the imported criteria plus the one new benchmark.
+"""Per-arm gate evaluation — the imported criteria plus the two new bars.
 
 The imported CPCV/DSR/path-positivity are reached UNEDITED through the adapter and run
 on the operator-ruled EXCESS-over-null stream (net minus per-day null median), never the
@@ -7,6 +7,13 @@ never a literal — which is what the re-added literal-N guard binds against
 (``tests/test_gate_literal_n_guard.py``). ``beat_random_percentile`` is called
 module-qualified (late-bound) so the machinery-removal falsification can stub it and
 watch this evaluation go red.
+
+The **absolute-net bar** (added 2026-07-12) is the second binding criterion computed
+here: the arm's median ABSOLUTE net return (the raw net stream, per bound) must clear
+``thresholds.absolute_net_min``. Beat-random is necessary but not sufficient — the
+retired gap-reversal ranker beat a cost-bled null on the excess stream yet lost money net
+of cost; this bar refuses that World-B pass. It is a plain per-bound binding flag, so it
+rides the cost corridor exactly like the excess-stream criteria.
 
 PBO is a CROSS-arm criterion (it needs the whole config matrix) and lives in
 ``program.py``; this module reports the per-arm criteria and the per-arm verdict.
@@ -52,6 +59,8 @@ class ArmGateReport:
     cpcv_positive_fraction: float
     cpcv_tenth: float
     cpcv_n_finite_paths: int
+    # -- absolute-economics bar (the raw net stream, NOT the excess) --
+    absolute_net_median: float
     # -- logged diagnostics (never gates) --
     profit_factor: float
     expectancy: float
@@ -60,6 +69,7 @@ class ArmGateReport:
     dsr_passed: bool
     cpcv_median_passed: bool
     positive_fraction_passed: bool
+    absolute_net_passed: bool
     all_binding_passed: bool
     any_near_threshold: bool
     insufficient: bool
@@ -128,6 +138,10 @@ def evaluate_arm(
         periods_per_year=periods_per_year,
     ).summary
 
+    # The absolute-economics bar runs on the RAW net stream (not the excess): the arm must
+    # make money net of cost, not merely beat a cost-bled null. Median for robustness.
+    absolute_net_median = float(np.median(net_seq))
+
     # Logged diagnostics — on the raw NET stream, never gates (Ruling 2).
     pf = profit_factor(net_seq)
     exp = expectancy(net_seq)
@@ -137,8 +151,13 @@ def evaluate_arm(
     dsr_passed = dsr >= thresholds.dsr_min
     cpcv_median_passed = cpcv.median_path_sharpe > thresholds.cpcv_median_min
     positive_fraction_passed = cpcv.positive_fraction > thresholds.positive_fraction_min
+    absolute_net_passed = absolute_net_median > thresholds.absolute_net_min
     all_binding_passed = (
-        beat_passed and dsr_passed and cpcv_median_passed and positive_fraction_passed
+        beat_passed
+        and dsr_passed
+        and cpcv_median_passed
+        and positive_fraction_passed
+        and absolute_net_passed
     )
 
     insufficient = (
@@ -146,6 +165,7 @@ def evaluate_arm(
         or cpcv.n_finite_paths < _MIN_FINITE_PATHS
         or not np.isfinite(observed_sharpe)
         or not np.isfinite(dsr)
+        or not np.isfinite(absolute_net_median)
     )
 
     any_near_threshold = (
@@ -155,6 +175,7 @@ def evaluate_arm(
         <= thresholds.near_margin_sharpe
         or abs(cpcv.positive_fraction - thresholds.positive_fraction_min)
         <= thresholds.near_margin_prob
+        or abs(absolute_net_median - thresholds.absolute_net_min) <= thresholds.near_margin_net
     )
 
     verdict = classify_arm(
@@ -176,12 +197,14 @@ def evaluate_arm(
         cpcv_positive_fraction=cpcv.positive_fraction,
         cpcv_tenth=cpcv.tenth_percentile,
         cpcv_n_finite_paths=cpcv.n_finite_paths,
+        absolute_net_median=absolute_net_median,
         profit_factor=pf,
         expectancy=exp,
         beat_passed=beat_passed,
         dsr_passed=dsr_passed,
         cpcv_median_passed=cpcv_median_passed,
         positive_fraction_passed=positive_fraction_passed,
+        absolute_net_passed=absolute_net_passed,
         all_binding_passed=all_binding_passed,
         any_near_threshold=any_near_threshold,
         insufficient=insufficient,

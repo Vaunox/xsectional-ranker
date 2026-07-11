@@ -138,12 +138,22 @@ gate:
                                # ("Kill-gate criterion 3 pins PBO < 0.20") — inherited.
   cpcv_median_min: 0.0         # sign criterion: the median CPCV path must be positive.
   positive_fraction_min: 0.5   # sign criterion: a majority of finite paths positive.
+  # absolute-net bar (added 2026-07-12, post the World-B ruling). beat-random is
+  # NECESSARY BUT NOT SUFFICIENT: the retired gap-reversal ranker proved an arm can beat a
+  # cost-bled random book on the excess stream (~+10 bps/day selection alpha) yet still
+  # LOSE ~74-220 bps/day net of cost. This bar requires the arm's median daily ABSOLUTE
+  # net return (per cost bound) to clear zero — make money net of cost, not merely beat
+  # random. 0.0 is the un-arguable break-even line, NOT outcome-tuned (it can only make the
+  # gate stricter, never resurrect an arm); survivorship-inflated upper bounds mean
+  # clearing it is necessary-not-sufficient. Per-bound, so it rides the cost corridor.
+  absolute_net_min: 0.0
   # STOP-and-flag near-threshold bands (pre-registered, conservative; not gate bars —
   # a binding criterion within its band is flagged NEAR_THRESHOLD for operator ruling,
   # never a silent PASS/KILL at the margin).
   near_margin_percentile: 2.0  # points around the null-percentile bar
   near_margin_prob: 0.02       # around the DSR / PBO / positive-fraction bars
   near_margin_sharpe: 0.02     # around the CPCV median bar
+  near_margin_net: 0.0002      # +/-2 bps around the absolute-net bar -> NEAR_THRESHOLD (operator rules)
   # CPCV / PBO structural params — PINNED PRE-RUN (pre-registration addendum, Step 3a,
   # operator-approved). They shape the gate, so they carry the same "fixed before the
   # result" guarantee as the four blind values; none is outcome-derived.

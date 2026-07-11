@@ -28,9 +28,11 @@ THRESH = GateThresholds(
     pbo_max=0.20,
     cpcv_median_min=0.0,
     positive_fraction_min=0.5,
+    absolute_net_min=0.0,
     near_margin_percentile=2.0,
     near_margin_prob=0.02,
     near_margin_sharpe=0.02,
+    near_margin_net=0.0002,
 )
 
 
@@ -81,6 +83,7 @@ def test_a_real_edge_clears_every_binding_criterion() -> None:
     assert rep.beat_passed and rep.beat_random.beat_percentile == 100.0
     assert rep.dsr_passed and rep.dsr >= 0.95
     assert rep.cpcv_median > 0.0 and rep.cpcv_positive_fraction == 1.0
+    assert rep.absolute_net_passed and rep.absolute_net_median > 0.0  # makes money net of cost
     assert rep.all_binding_passed and not rep.insufficient and not rep.any_near_threshold
     assert rep.verdict is ArmVerdict.PASS_PROVISIONAL
 
@@ -109,6 +112,27 @@ def test_positive_pnl_that_loses_to_the_null_is_killed() -> None:
     assert float(np.mean(rep.beat_random.excess_stream)) < 0.0
     assert not rep.beat_passed
     assert not rep.dsr_passed
+    assert rep.verdict is ArmVerdict.KILL
+
+
+def test_beats_a_bleeding_null_but_net_negative_is_killed_on_absolute_economics() -> None:
+    """World-B teeth (2026-07-12) — the mirror of the test above, and the durable lesson of
+    the retired gap-reversal ranker: an arm can BEAT a catastrophically cost-bled null on
+    every excess-stream criterion (real selection alpha) yet still LOSE money net of cost
+    (the gap ranker: ~+10 bps/day gross edge, -74 to -220 bps/day net). beat-random is
+    necessary, NOT sufficient — the absolute-net bar refuses the World-B pass.
+
+    Under the pre-absolute-net gate this arm was a clean PASS_PROVISIONAL; the bar is what
+    turns it red, so this test is load-bearing for the criterion (not incidental)."""
+    # signal median ~ -0.5% (loses net of cost); null ~ -2% (bleeds harder) -> excess ~ +1.5%.
+    with tempfile.TemporaryDirectory() as d:
+        rep = _evaluate(_fixture(-0.005, -0.02), _ledger(d))
+    # it beats the bleeding null on every excess-stream criterion...
+    assert rep.beat_passed and rep.beat_random.beat_percentile >= 95.0
+    assert rep.dsr_passed and rep.cpcv_median > 0.0 and rep.positive_fraction_passed
+    # ...but its ABSOLUTE net return is negative, so the new bar kills it.
+    assert rep.absolute_net_median < 0.0 and not rep.absolute_net_passed
+    assert not rep.all_binding_passed
     assert rep.verdict is ArmVerdict.KILL
 
 

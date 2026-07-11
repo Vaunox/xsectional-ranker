@@ -39,9 +39,11 @@ THRESH = GateThresholds(
     pbo_max=0.20,
     cpcv_median_min=0.0,
     positive_fraction_min=0.5,
+    absolute_net_min=0.0,
     near_margin_percentile=2.0,
     near_margin_prob=0.02,
     near_margin_sharpe=0.02,
+    near_margin_net=0.0002,
 )
 # (symbol, sector, gap, edge_sign): downs (neg gap) rise (+), ups (pos gap) fall (-).
 SPEC = [

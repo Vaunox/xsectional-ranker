@@ -103,6 +103,63 @@ def test_slice_to_surviving_days() -> None:
     assert sliced.draws[date(2024, 1, 2)] == panel.draws[date(2024, 1, 2)]  # unchanged draws
 
 
+def test_random_null_book_is_feasible_on_every_draw() -> None:
+    """No zero-pads (the 2026-07-11 fix): on a feasible panel every draw yields a valid
+    Book, never a DayDropped. Before the fix ~50% of draws were infeasible and zero-padded."""
+    panel = _rich_panel()  # 8 distinct-sector names, k=2 -> a valid disjoint 2+2 book exists
+    drops = sum(
+        isinstance(build_random_book(panel, CFG, np.random.default_rng(seed)), DayDropped)
+        for seed in range(300)
+    )
+    assert drops == 0
+
+
+def test_random_null_book_respects_the_cap_and_disjointness() -> None:
+    """The random book obeys the SAME ⌈k/2⌉ sector cap + disjoint legs as the signal book."""
+    book = build_random_book(_rich_panel(), CFG, np.random.default_rng(1))
+    assert isinstance(book, Book)
+    longs = {p.symbol for p in book.longs}
+    shorts = {p.symbol for p in book.shorts}
+    assert len(longs) == CFG.k_per_leg and len(shorts) == CFG.k_per_leg
+    assert longs.isdisjoint(shorts)  # disjoint legs
+    for leg in (book.longs, book.shorts):
+        by_sector: dict[str, int] = {}
+        for p in leg:
+            by_sector[p.sector] = by_sector.get(p.sector, 0) + 1
+        assert max(by_sector.values()) <= CFG.sector_cap
+
+
+def test_null_and_signal_share_a_genuinely_infeasible_day() -> None:
+    """Shared day-drop: when no valid k+k capped disjoint book is feasible at all, BOTH the
+    signal and the null drop the day (symmetry) — the null never zero-pads it instead."""
+    # 4 names, all one sector; ⌈2/2⌉ = 1 per sector per leg -> a 2-name leg is impossible.
+    panel = [
+        _sym("A", -0.05, "IT"),
+        _sym("B", -0.04, "IT"),
+        _sym("C", 0.04, "IT"),
+        _sym("D", 0.05, "IT"),
+    ]
+    assert isinstance(build_random_book(panel, CFG, np.random.default_rng(0)), DayDropped)
+    assert isinstance(build_book(panel, _adapter(), CFG), DayDropped)  # the signal shares it
+
+
+def test_null_book_must_clear_the_same_floor_as_the_signal() -> None:
+    """The null faces the IDENTICAL gross floor (2026-07-11 correction — NOT floor 0): when
+    every feasible book is below the floor, BOTH the signal and the null drop the day."""
+    # entry-window value Rs 1,000 -> per-name cap Rs 10 -> book gross ~ Rs 20, far below the floor.
+    cfg = ExecutionConfig(
+        k_per_leg=2, participation_cap=0.01, gross_floor_inr=5_000_000.0, sector_cap_divisor=2
+    )
+    panel = [
+        _sym("A", -0.05, "IT", ewv=1_000.0),
+        _sym("B", -0.04, "Auto", ewv=1_000.0),
+        _sym("C", 0.04, "FMCG", ewv=1_000.0),
+        _sym("D", 0.05, "Metals", ewv=1_000.0),
+    ]
+    assert isinstance(build_random_book(panel, cfg, np.random.default_rng(0)), DayDropped)
+    assert isinstance(build_book(panel, _adapter(), cfg), DayDropped)  # the signal shares the floor
+
+
 def test_null_endures_circuit_and_mask_like_the_signal() -> None:
     panel = [_sym(s.symbol, s.signal, s.sector) for s in _rich_panel()]
     panel[0] = _sym("A", -0.06, "IT", locked=True)  # circuit-locked
