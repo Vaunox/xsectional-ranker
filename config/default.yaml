@@ -89,5 +89,7 @@ cost:
   optimistic_spread_multiplier: 1.0    # raw Corwin-Schultz implied spread (frozen)
   pessimistic_spread_multiplier: 3.0   # ~3x implied spread (frozen)
 
-null:
+# Quoted so the key is the string "null", not a YAML null literal (which parses to
+# None and hides the block from load_layer2_config — a latent Phase-2 parse bug).
+"null":
   draws_per_day: 50            # TOY N (real null-draws-per-day frozen at Phase 2->3)
