@@ -31,7 +31,10 @@ kite_access_token*
 
 # Research data caches — never committed; acquired per-phase (Kite historical,
 # point-in-time universe). Data is reconstructed, not versioned here.
-data/
+# ANCHORED to the repo root (/data/) so it ignores the local cache WITHOUT also
+# swallowing the src/xsranker/data/ SOURCE package (an unanchored `data/` did
+# exactly that on the first Phase-1 push — the whole data layer went uncommitted).
+/data/
 *.parquet
 *.duckdb
 *.sqlite
