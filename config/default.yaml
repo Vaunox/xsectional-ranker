@@ -89,11 +89,23 @@ execution:
   # with the retired TOY 5), not outcome-tuned.
   k_per_leg: 5
   participation_cap: 0.01      # <= 1% of entry-window volume (frozen Phase 2, pessimistic)
-  # gross floor = ₹5,000,000 / ₹50 lakh (FROZEN BLIND, Step 2). A-priori: the minimum
-  # neutral book where proportional (bps) costs dominate lot granularity; set below
-  # typical large-cap feasible gross so a ~0% Phase-1 day-drop is a validating
-  # diagnostic, not a tuned knob. Load-bearing in the Phase-4 mid-caps.
-  gross_floor_inr: 5_000_000
+  # gross floor = ₹100,000 (RE-FROZEN BLIND v2, 2026-07-11; supersedes the ill-posed
+  # ₹5,000,000 of Step 2 — that value stays in history at `pre-registration-frozen`).
+  # WHY v2: the Step-2 rationale ("floor where bps dominate fixed cost") was ill-posed —
+  # the frozen cost model is SCALE-INVARIANT (flat ~16-23 bps, no fixed component), so no
+  # cost-mechanical floor exists at all. The ONLY small-size effect is integer-share
+  # granularity; ₹100,000 is the MINIMAL floor at which every selected name forms a real
+  # whole-share position (below it, per-name notional < ₹20k = single-digit shares of a
+  # high-priced name — not a formable book). NOT tuned to a survival rate; chosen with
+  # ZERO sight of any return (the only reason a re-freeze is legitimate).
+  # SIZE CAVEAT (stamped on every result, never separable from an "it works" reading):
+  # the strategy structurally selects thin extreme-gap names, so the median feasible book
+  # is only ₹3-5M with a fat low tail; at this floor integer-share tracking error (up to
+  # ~10 bps) is materially present in the P&L. Existence-test-valid (cost is scale-
+  # invariant, so the edge/no-edge signal survives the granularity noise) but a small-
+  # size / LOW-CAPACITY finding — a real property of the idea that follows into Phase-4
+  # mid-caps (likely worse there).
+  gross_floor_inr: 100_000
   sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen Phase 2)
 
 cost:
