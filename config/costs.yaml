@@ -4,6 +4,16 @@
 # (Part III Layer 2, Inviolable Rule 3). All rates are fractions of turnover
 # unless noted. NO DP charge — that applies to delivery (CNC) sells, not MIS
 # intraday. A round trip is one buy + one sell.
+#
+# VERIFIED STANDARD FEE MODEL (2026-07-12). The statutory rates below were cross-checked
+# against the live Zerodha intraday (MIS) schedule and confirmed exact. Round-trip they
+# total ~4.5 bps/name @ ₹500k notional → ~8.2 bps @ ₹100k (only the ₹20 brokerage cap is
+# size-dependent). These fees are NOT the disputed quantity — the SPREAD is. Cost-realism
+# finding (RESEARCH_FINDINGS.md §5.3): Corwin-Schultz over-reads spread ~2-3x on the
+# high-range, gap-selected names the ranker trades. STANDARD COST MODEL = these verified
+# fees + a DEFENSIBLE spread (a conservative fixed bound and/or Abdi-Ranaldo), NEVER
+# Corwin-Schultz alone. The `slippage` block below is the frozen default the Layer-2 cost
+# corridor overrides; the corridor's spread params are pinned blind per candidate.
 
 brokerage:
   rate: 0.0003        # 0.03% of order value...
