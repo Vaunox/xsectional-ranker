@@ -1,0 +1,60 @@
+# Static point-in-time sector classification for the survivor-cache universe.
+#
+# A cheap LABEL map (not a price series), feeding the Phase-2 ceil(k/2)-per-sector
+# cap: a clustered sector gap is macro repricing, not idiosyncratic overreaction,
+# so fading it violates the signal's core hypothesis. Every universe symbol must
+# map to exactly one sector (validated in gate-zero). Coarse NSE macro-sectors;
+# the taxonomy is refined in Phase 2/4 — Phase 1 needs coverage + a single label.
+#
+# STAMP: static (no reconstitution history); adequate for the survivor stub.
+
+sectors:
+  ADANIENT: Infrastructure
+  ADANIPORTS: Infrastructure
+  APOLLOHOSP: Pharma & Healthcare
+  ASIANPAINT: Consumer Durables
+  AXISBANK: Financial Services
+  BAJAJ-AUTO: Automobile
+  BAJAJFINSV: Financial Services
+  BAJFINANCE: Financial Services
+  BEL: Capital Goods
+  BHARTIARTL: Telecom
+  BPCL: Oil & Gas
+  BRITANNIA: FMCG
+  CIPLA: Pharma & Healthcare
+  COALINDIA: Metals & Mining
+  DRREDDY: Pharma & Healthcare
+  EICHERMOT: Automobile
+  GRASIM: Cement
+  HCLTECH: Information Technology
+  HDFCBANK: Financial Services
+  HDFCLIFE: Financial Services
+  HEROMOTOCO: Automobile
+  HINDALCO: Metals & Mining
+  HINDUNILVR: FMCG
+  ICICIBANK: Financial Services
+  INDUSINDBK: Financial Services
+  INFY: Information Technology
+  ITC: FMCG
+  JSWSTEEL: Metals & Mining
+  KOTAKBANK: Financial Services
+  LT: Capital Goods
+  M&M: Automobile
+  MARUTI: Automobile
+  NESTLEIND: FMCG
+  NTPC: Power
+  ONGC: Oil & Gas
+  POWERGRID: Power
+  RELIANCE: Oil & Gas
+  SBILIFE: Financial Services
+  SBIN: Financial Services
+  SHRIRAMFIN: Financial Services
+  SUNPHARMA: Pharma & Healthcare
+  TATACONSUM: FMCG
+  TATASTEEL: Metals & Mining
+  TCS: Information Technology
+  TECHM: Information Technology
+  TITAN: Consumer Durables
+  TRENT: Retail
+  ULTRACEMCO: Cement
+  WIPRO: Information Technology

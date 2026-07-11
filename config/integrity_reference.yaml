@@ -1,0 +1,28 @@
+# Gate-zero reference data — a SECOND SOURCE for data-integrity validation.
+#
+# Known public NSE corporate actions (external ground truth) used to assert the
+# adjusted series shows NO spurious split-scale gap across the ex-date, plus a few
+# hand-verified reference closes to catch gross ingestion errors. This is the
+# independent cross-check the gate-zero integrity suite runs against the cache.
+
+# Max |overnight gap| the adjusted series may show across a known ex-date. Well
+# below the smallest action here (a 2:1 split => 0.50 if unadjusted) yet above
+# ordinary/dividend gaps, so an unadjusted split fails while real gaps pass.
+spurious_gap_threshold: 0.20
+
+# Known splits/bonuses among the survivor universe. The adjusted overnight gap at
+# the ex-date must NOT show a jump anywhere near the action's magnitude.
+known_actions:
+  - {symbol: TATASTEEL, ex_date: 2022-07-28, kind: split, magnitude: 10.0}
+  - {symbol: HDFCBANK,   ex_date: 2019-09-19, kind: split, magnitude: 2.0}
+  - {symbol: RELIANCE,   ex_date: 2017-09-07, kind: bonus, magnitude: 2.0}
+
+# Hand-verified reference closes (last-bar close on the IST session), tolerance is
+# a fraction. Values confirmed against a second source during Phase-1 recon.
+reference_closes:
+  - {symbol: TATASTEEL, date: 2022-07-25, close: 90.73, tol: 0.02}
+  - {symbol: HDFCBANK,  date: 2019-09-16, close: 560.80, tol: 0.02}
+
+# Sampled historical dates on which the (stub) point-in-time universe must
+# reconstruct to the full survivor set.
+universe_sample_dates: [2016-06-01, 2019-01-15, 2022-07-28, 2025-03-10]

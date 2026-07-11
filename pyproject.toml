@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
     "numpy==2.4.6",       # EXACT pin — frozen harness numeric core (Deep Dive 03 Check 4)
     "scipy==1.17.1",      # EXACT pin — normal CDF/PPF, skew/kurtosis for DSR/PSR/PBO
+    "pyarrow>=16",        # read the inherited external Parquet OHLCV cache (Layer 1 data seam)
     "pyyaml>=6.0.1",      # layered YAML config loader
     "structlog>=24.1.0",  # structured logging (IST, correlation IDs, redaction)
     "tzdata>=2024.1",     # IANA tz database for zoneinfo IST on Windows
@@ -131,9 +132,9 @@ module = ["lab.*"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-# scipy ships incomplete inline types; skip following it so calls are Any at the
-# boundary rather than "untyped call" errors. Our signatures stay typed.
-module = ["scipy", "scipy.*"]
+# scipy/pyarrow ship incomplete inline types; skip following them so calls are Any
+# at the boundary rather than "untyped call" errors. Our signatures stay typed.
+module = ["scipy", "scipy.*", "pyarrow", "pyarrow.*"]
 follow_imports = "skip"
 ignore_missing_imports = true
 

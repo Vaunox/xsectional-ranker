@@ -1,17 +1,70 @@
-# Program-wide settings (Phase 0 baseline).
+# Program-wide settings (Phase 0 + Phase 1 baseline).
 #
-# Business thresholds that must be committed blind before the first run — k,
-# gross-exposure floor, null draws N, liquidity floor, null-percentile pass bar
-# — are NOT here yet; they are frozen at implementation (docs/PROGRESS.md), not
-# in Phase 0.
+# Business thresholds that must be committed blind before the FIRST RUN (Phase 3)
+# — k, gross floor, null draws N, null-percentile bar — are still not set here.
+# The liquidity floor IS pre-registered and committed below (Phase 1 needs it).
 
 logging:
   level: INFO
   renderer: console
 
-# Master determinism seed for every stochastic harness path (CPCV fold order,
-# robustness Monte-Carlo). Config, logged, and frozen into the golden fixtures
-# so two runs — here and at the predecessor — produce identical output
-# (Deep Dive 03, Check 4). Change it and the golden RNG fixture must be
-# regenerated.
+# Master determinism seed for every stochastic path. Config, logged, frozen into
+# the golden fixtures (Deep Dive 03, Check 4).
 seed: 20260711
+
+# --------------------------------------------------------------------------- #
+# Layer 1 — Data & Universe (Phase 1). All paths/thresholds are config, never    #
+# literals in code (Part I §1).                                                  #
+# --------------------------------------------------------------------------- #
+data:
+  # The INHERITED external Parquet OHLCV cache — hat (3): a read-only external
+  # input, distinct from the vendor source (frozen harness) and the golden
+  # birthplace. Split/bonus back-adjusted (Kite; empirically verified); cash
+  # dividends UNADJUSTED (bounded ex-div residual accepted for the survivor upper
+  # bound; dividend adjustment deferred to Phase 4).
+  #
+  # This is a PLACEHOLDER, not a real location — the cache is machine-local and
+  # never committed. Point at your local cache via the XSR_DATA_CACHE_PATH env var,
+  # which overrides this value. Relative paths resolve against the repo root; when
+  # the path does not exist (e.g. CI), cache-backed tests skip.
+  cache_path: "data/cache/raw"
+  interval: "5minute"
+
+calendar:
+  # Regular NSE session in IST; out-of-session bars (Muhurat evenings, pre/post)
+  # are filtered at the ingest boundary, never trimmed from the raw store.
+  session:
+    regular_start: "09:15"
+    regular_end: "15:30"
+  # Default entry window (minutes after open) that defines the "entry instant" for
+  # the circuit filter and the leakage tests. Swept {15,30,45} in Phase 2 — this
+  # is only the Phase-1 default; the machinery is parametrized.
+  entry_window_default_min: 30
+
+hygiene:
+  bad_tick:
+    # A single 5-min bar whose |log-return| exceeds this is a suspected bad tick
+    # (flagged + logged, never silently kept). 35% intra-bar move on a large cap.
+    max_bar_abs_return: 0.35
+  liquidity_floor:
+    # PRE-REGISTERED (frozen): never rank a name you cannot exit. Median daily
+    # traded value over the lookback must clear this. Large-cap survivors clear it
+    # by orders of magnitude (logged); it goes load-bearing in the Phase-4 mid-caps.
+    min_median_daily_value_inr: 50_000_000   # ₹5 crore
+    lookback_days: 20
+
+circuit:
+  # Conservative circuit-lock / untradeable filter — when in doubt, drop.
+  recent_range_lookback_bars: 20     # the name's own recent intraday range window
+  min_range_ratio: 0.10              # entry-bar range < ratio * recent-median range => suspected lock
+  low_volume_pctile: 0.10            # entry-bar volume below this time-of-day quantile => suspicious
+
+universe:
+  # Phase-1 point-in-time universe is the survivor-cache STUB (survivorship-
+  # inflated upper bound); the real reconstruction is Phase 4.
+  survivor_cache_file: "universe/survivor_cache.yaml"
+
+sector:
+  # Static point-in-time sector classification (a label map, not a price series)
+  # feeding the later Phase-2 ceil(k/2) sector cap.
+  map_file: "sectors.yaml"

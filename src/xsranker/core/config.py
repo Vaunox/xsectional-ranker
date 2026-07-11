@@ -34,6 +34,9 @@ class Settings:
     log_renderer: str
     #: Master determinism seed for every stochastic harness path (Check 4).
     seed: int
+    #: The full merged config mapping, so richer typed sub-configs (e.g. the
+    #: Layer-1 data/universe config) can be built without re-reading the files.
+    raw: Mapping[str, Any]
 
 
 def _deep_merge(base: Mapping[str, Any], overlay: Mapping[str, Any]) -> dict[str, Any]:
@@ -91,4 +94,5 @@ def load_settings(config_dir: Path | None = None, *, env: str | None = None) -> 
         log_level=str(logging_cfg.get("level", "INFO")),
         log_renderer=str(logging_cfg.get("renderer", "console")),
         seed=int(merged["seed"]),
+        raw=merged,
     )

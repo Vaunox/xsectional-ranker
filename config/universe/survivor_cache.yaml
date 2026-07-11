@@ -1,0 +1,63 @@
+# Phase-1 point-in-time universe — the inherited SURVIVOR CACHE (stub).
+#
+# STAMP: survivorship-inflated upper bound. These are 49 present-day large-cap
+# survivors; a name that delisted/merged before 2026 is absent. Because the signal
+# goes LONG the biggest gap-downs (the profile of a dying stock), survivor-only
+# data DELETES exactly those catastrophic longs and INFLATES long-leg P&L. A
+# Phase-1 KILL is therefore hyper-trustworthy; a Phase-1 PASS is provisional only.
+# The real point-in-time reconstruction (with delisted/suspended names) is Phase 4.
+#
+# This is a machinery prototype, NOT a research universe. Do not trust a PASS here.
+
+stamp: "survivorship-inflated upper bound; survivor-cache stub; real point-in-time reconstruction deferred to Phase 4"
+
+symbols:
+  - ADANIENT
+  - ADANIPORTS
+  - APOLLOHOSP
+  - ASIANPAINT
+  - AXISBANK
+  - BAJAJ-AUTO
+  - BAJAJFINSV
+  - BAJFINANCE
+  - BEL
+  - BHARTIARTL
+  - BPCL
+  - BRITANNIA
+  - CIPLA
+  - COALINDIA
+  - DRREDDY
+  - EICHERMOT
+  - GRASIM
+  - HCLTECH
+  - HDFCBANK
+  - HDFCLIFE
+  - HEROMOTOCO
+  - HINDALCO
+  - HINDUNILVR
+  - ICICIBANK
+  - INDUSINDBK
+  - INFY
+  - ITC
+  - JSWSTEEL
+  - KOTAKBANK
+  - LT
+  - M&M
+  - MARUTI
+  - NESTLEIND
+  - NTPC
+  - ONGC
+  - POWERGRID
+  - RELIANCE
+  - SBILIFE
+  - SBIN
+  - SHRIRAMFIN
+  - SUNPHARMA
+  - TATACONSUM
+  - TATASTEEL
+  - TCS
+  - TECHM
+  - TITAN
+  - TRENT
+  - ULTRACEMCO
+  - WIPRO
