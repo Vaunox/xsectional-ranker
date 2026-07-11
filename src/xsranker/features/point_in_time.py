@@ -1,4 +1,4 @@
-"""Point-in-time features: per-day open/close, overnight gap, entry-window return.
+"""Point-in-time features: open/close, gap, entry-window return, hold return, entry value.
 
 * ``daily_open_close`` — first-bar open and last-bar close per IST session.
 * ``overnight_gap`` — ``(day_open - prior_day_close) / prior_day_close``; the
@@ -8,9 +8,20 @@
 * ``entry_window_return`` — ``(entry_bar_close / day_open) - 1`` computed from the
   morning window ``[open .. entry]`` ONLY. It is invariant to appending afternoon or
   future bars — the property the prefix-invariance suite proves is load-bearing.
+* ``hold_return`` — ``(day_close / entry_bar_close) - 1``: the realized entry->close
+  return of a position entered at the entry instant and held to that session's close.
+  Uses ONLY that day's bars from the entry bar to the day's last bar; appending future
+  bars/days cannot change a day's value (the no-lookahead property — a hold return that
+  reaches even one bar past its own session close would leak). This is the P&L basis
+  for the book's per-day net return.
+* ``entry_window_value`` — ₹ traded value summed over the morning window
+  ``[open .. entry]`` (per-bar ``close * volume``); the base for the 1%-participation
+  fill cap. Entry-window only, so it never sees post-entry or future volume.
 """
 
 from __future__ import annotations
+
+from datetime import date
 
 import numpy as np
 
@@ -63,3 +74,47 @@ def entry_window_return(ohlcv: OHLCV, *, entry_minute: int) -> tuple[DatetimeArr
         out_days.append(d)
         out_vals.append(float(entry_close / day_open - 1.0))
     return np.array(out_days, dtype="datetime64[D]"), np.array(out_vals, dtype=np.float64)
+
+
+def hold_return(ohlcv: OHLCV, *, entry_minute: int) -> dict[date, float]:
+    """Per-day entry->close hold return ``(day_close / entry_bar_close) - 1``.
+
+    A position entered at ``entry_minute`` and held to that IST session's close. A day
+    contributes only if it has an entry-minute bar. The exit is the day's OWN last bar,
+    isolated by the day mask — so appending later bars or future days cannot change a
+    day's value (no-lookahead). A variant that reaches past the session close (e.g. the
+    series' final bar, or the next day's open) would break that invariance.
+    """
+    minutes = ohlcv.ist_minutes()
+    dates = ohlcv.ist_dates()
+    out: dict[date, float] = {}
+    for d in np.unique(dates):
+        day_mask = dates == d
+        entry_pos = np.nonzero(minutes[day_mask] == entry_minute)[0]
+        if entry_pos.size == 0:
+            continue
+        entry_close = ohlcv.close[day_mask][int(entry_pos[0])]
+        day_close = ohlcv.close[day_mask][-1]  # this day's last bar, never a later one
+        out[d.astype("datetime64[D]").astype(date)] = float(day_close / entry_close - 1.0)
+    return out
+
+
+def entry_window_value(ohlcv: OHLCV, *, entry_minute: int) -> dict[date, float]:
+    """Per-day ₹ traded value over the morning window ``[open .. entry]`` (inclusive).
+
+    Sums per-bar ``close * volume`` from the day's first bar to the entry-minute bar —
+    the base for the 1%-participation fill cap. Entry-window only: post-entry and
+    future-day volume never enter it. A day contributes only if it has an entry bar.
+    """
+    minutes = ohlcv.ist_minutes()
+    dates = ohlcv.ist_dates()
+    tv = ohlcv.traded_value()
+    out: dict[date, float] = {}
+    for d in np.unique(dates):
+        day_mask = dates == d
+        entry_pos = np.nonzero(minutes[day_mask] == entry_minute)[0]
+        if entry_pos.size == 0:
+            continue
+        window = tv[day_mask][: int(entry_pos[0]) + 1]
+        out[d.astype("datetime64[D]").astype(date)] = float(window.sum())
+    return out
