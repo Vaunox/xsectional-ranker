@@ -1,8 +1,12 @@
-# Program-wide settings (Phase 0 + Phase 1 baseline).
+# Program-wide settings (Phase 0 + Phase 1 baseline; Phase-3 pre-registration freeze).
 #
-# Business thresholds that must be committed blind before the FIRST RUN (Phase 3)
-# — k, gross floor, null draws N, null-percentile bar — are still not set here.
-# The liquidity floor IS pre-registered and committed below (Phase 1 needs it).
+# PRE-REGISTRATION FREEZE (Step 2, 2026-07-11, operator-approved at Checkpoint B).
+# The four blind values that must be set BEFORE the first run — k, gross floor, null
+# draws N, null-percentile bar — are frozen below, each justified a-priori by universe
+# structure / cost mechanics / statistical power, none by any observed result (there is
+# none yet). The four inherited kill-gate bars are committed with provenance. This commit
+# is the provenance proof that the bar preceded the experiment; the single blind smoke
+# run is a strictly LATER commit. The liquidity floor was pre-registered in Phase 1.
 
 logging:
   level: INFO
@@ -70,26 +74,61 @@ sector:
   map_file: "sectors.yaml"
 
 # --------------------------------------------------------------------------- #
-# Layer 2 — Signal, Execution & Null (Phase 2).                                 #
-# TOY marks a value that is deliberately NOT the frozen research value — the real #
-# k / gross floor / N are committed BLIND at the Phase 2->3 boundary before the   #
-# first run. The pre-registered non-TOY frozen values (participation cap, spread  #
-# multipliers, ATR period, sector-cap divisor) are set here.                      #
+# Layer 2 — Signal, Execution & Null (Phase 2). The k / gross-floor / N blind values #
+# below were set at the Phase-3 pre-registration freeze (Step 2) — no longer TOY.     #
+# Participation cap, spread multipliers, ATR period, sector-cap divisor were           #
+# pre-registered in Phase 2.                                                           #
 # --------------------------------------------------------------------------- #
 signal:
   atr_period: 20               # ATR-20 (DAILY) for A-Z normalization + risk-parity (frozen)
 
 execution:
-  k_per_leg: 5                 # TOY (real k frozen at Phase 2->3)
-  participation_cap: 0.01      # <= 1% of entry-window volume (frozen, pessimistic)
-  gross_floor_inr: 1_000_000   # TOY (real gross-exposure floor frozen at Phase 2->3)
-  sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen)
+  # k = 5 (FROZEN BLIND, Step 2). A-priori: top-5 of the 49-name universe ~ the top-10%
+  # tail (selective), 5-name intra-leg diversification, and ceil(5/2)=3 per-sector cap
+  # that binds the dominant 11-name Financials cluster. Re-derived on merit (coincides
+  # with the retired TOY 5), not outcome-tuned.
+  k_per_leg: 5
+  participation_cap: 0.01      # <= 1% of entry-window volume (frozen Phase 2, pessimistic)
+  # gross floor = ₹5,000,000 / ₹50 lakh (FROZEN BLIND, Step 2). A-priori: the minimum
+  # neutral book where proportional (bps) costs dominate lot granularity; set below
+  # typical large-cap feasible gross so a ~0% Phase-1 day-drop is a validating
+  # diagnostic, not a tuned knob. Load-bearing in the Phase-4 mid-caps.
+  gross_floor_inr: 5_000_000
+  sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen Phase 2)
 
 cost:
-  optimistic_spread_multiplier: 1.0    # raw Corwin-Schultz implied spread (frozen)
-  pessimistic_spread_multiplier: 3.0   # ~3x implied spread (frozen)
+  optimistic_spread_multiplier: 1.0    # raw Corwin-Schultz implied spread (frozen Phase 2)
+  pessimistic_spread_multiplier: 3.0   # ~3x implied spread (frozen Phase 2)
 
 # Quoted so the key is the string "null", not a YAML null literal (which parses to
 # None and hides the block from load_layer2_config — a latent Phase-2 parse bug).
 "null":
-  draws_per_day: 50            # TOY N (real null-draws-per-day frozen at Phase 2->3)
+  # N = 1000 null draws/day (FROZEN BLIND, Step 2). A-priori: percentile resolution —
+  # ~50 draws in the upper 5% tail give the 95th-percentile bar a stable estimate;
+  # memoryless seeded draws, so the one-time cost is trivial.
+  draws_per_day: 1000
+
+# --------------------------------------------------------------------------- #
+# Layer 3 — Validation & Gate (Phase 3). Pre-registered gate bars (Step 2 freeze).   #
+# --------------------------------------------------------------------------- #
+gate:
+  # null-percentile = 95th (FROZEN BLIND, Step 2). Derived from an a-priori per-arm
+  # false-positive tolerance alpha = 0.05: beating the P-th percentile => under H0
+  # (ranked ~ random) an arm clears it by luck with probability (100-P)/100 = alpha,
+  # so alpha = 0.05 => P = 95. NOT inflated for the 6 arms — cross-arm multiplicity is
+  # owned entirely by the DSR/effective-N deflation, so raising P to cover arm-count
+  # would double-count. The asymmetric false-PASS cost argues against dropping below 90.
+  null_percentile: 95
+  # Inherited kill-gate bars — pre-registered with provenance (NOT invented here):
+  dsr_min: 0.95                # DSR = P(true Sharpe > inflated benchmark); 0.95 is the
+                               # 95%-confidence bar, the companion to alpha = 0.05.
+  pbo_max: 0.20                # documented VERBATIM in the vendored pbo.py
+                               # ("Kill-gate criterion 3 pins PBO < 0.20") — inherited.
+  cpcv_median_min: 0.0         # sign criterion: the median CPCV path must be positive.
+  positive_fraction_min: 0.5   # sign criterion: a majority of finite paths positive.
+  # STOP-and-flag near-threshold bands (pre-registered, conservative; not gate bars —
+  # a binding criterion within its band is flagged NEAR_THRESHOLD for operator ruling,
+  # never a silent PASS/KILL at the margin).
+  near_margin_percentile: 2.0  # points around the null-percentile bar
+  near_margin_prob: 0.02       # around the DSR / PBO / positive-fraction bars
+  near_margin_sharpe: 0.02     # around the CPCV median bar
