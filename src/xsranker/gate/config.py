@@ -1,0 +1,71 @@
+"""Typed gate thresholds — the pre-registered bars the verdict is measured against.
+
+``null_percentile`` is one of the FOUR blind values frozen at the Phase 2→3 boundary
+(Checkpoint B → Step 2); it lives here and is committed with its a-priori rationale.
+The remaining bars are the inherited kill-gate criteria, pre-registered with the
+provenance noted per field — they are NOT new policy:
+
+* ``pbo_max = 0.20`` — documented verbatim in the vendored ``pbo.py`` ("criterion 3
+  pins PBO < 0.20").
+* ``dsr_min = 0.95`` — the DSR is ``P(true Sharpe > the multiple-testing-inflated
+  benchmark)``; 0.95 is the 95%-confidence bar, the natural companion to an alpha = 0.05
+  per-arm false-positive tolerance (the null-percentile derivation).
+* ``cpcv_median_min = 0.0`` / ``positive_fraction_min = 0.5`` — sign criteria (the
+  median path positive; a majority of finite paths positive).
+
+The ``near_margin_*`` bands drive STOP-and-flag: a binding criterion within its band
+of the bar is NEAR_THRESHOLD (operator rules), never a silent PASS/KILL at the margin.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
+
+from xsranker.core.config import Settings
+
+
+@dataclass(frozen=True, slots=True)
+class GateThresholds:
+    """The pre-registered gate bars + the STOP-and-flag near-threshold bands."""
+
+    null_percentile: float  # BLIND value (Step 2); the per-arm beat-random bar
+    dsr_min: float
+    pbo_max: float
+    cpcv_median_min: float
+    positive_fraction_min: float
+    near_margin_percentile: float
+    near_margin_prob: float
+    near_margin_sharpe: float
+
+
+def _req(m: Mapping[str, Any], key: str) -> Any:
+    if key not in m:
+        raise ValueError(f"config: missing '{key}' under 'gate'")
+    return m[key]
+
+
+def load_gate_thresholds(settings: Settings) -> GateThresholds:
+    """Build :class:`GateThresholds` from the ``gate:`` block of the merged config.
+
+    The block is added at Step 2 (the blind freeze); until then callers construct the
+    thresholds directly (Step-1 synthetic tests pass them explicitly).
+
+    Raises:
+        ValueError: if the ``gate`` block or any required key is absent.
+    """
+    raw = settings.raw
+    if "gate" not in raw:
+        raise ValueError("config: missing 'gate' block (frozen at the Phase 2->3 boundary)")
+    g = raw["gate"]
+    return GateThresholds(
+        null_percentile=float(_req(g, "null_percentile")),
+        dsr_min=float(_req(g, "dsr_min")),
+        pbo_max=float(_req(g, "pbo_max")),
+        cpcv_median_min=float(_req(g, "cpcv_median_min")),
+        positive_fraction_min=float(_req(g, "positive_fraction_min")),
+        near_margin_percentile=float(_req(g, "near_margin_percentile")),
+        near_margin_prob=float(_req(g, "near_margin_prob")),
+        near_margin_sharpe=float(_req(g, "near_margin_sharpe")),
+    )
