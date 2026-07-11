@@ -57,9 +57,13 @@ pinned to 3.11.
 | Python | 3.11 (3.11.9) |
 | numpy | 2.4.6 |
 | scipy | 1.17.1 |
+| TA-Lib | 0.7.0 *(Phase 2 — backs the vendored `atr`)* |
 
-The frozen harness imports **only** numpy + scipy — TA-Lib / pandas / pyarrow are
-absent from Phase 0 (the feature primitives that need them are deferred; see below).
+The Phase-0 statistical harness imports **only** numpy + scipy. **Phase 2** adds the
+feature primitives (below), which bring **TA-Lib 0.7.0** (`talib.ATR`); pinned `==`
+in `pyproject.toml` + `uv.lock`. TA-Lib's `ATR` is single-threaded Wilder-average C
+(no BLAS reduction), so `OMP_NUM_THREADS=1` discipline continues and the `feature_atr`
+golden confirms bit-stability.
 
 `OMP_NUM_THREADS=1` (and the OpenBLAS/MKL/NumExpr equivalents) is pinned for golden
 runs — in CI env, in `tests/conftest.py`, and asserted by the golden test — to avoid
@@ -70,10 +74,12 @@ atol=1e-12` is the ceiling, not evidence of slop. No tolerance was loosened.
 
 ---
 
-## Vendored files (16) — hashes & certifying tests
+## Vendored files (20) — hashes & certifying tests
 
-SHA-256 is the CI tripwire source of truth (`src/vendored/vendored_hashes.txt`);
-the git blob OID is the pin cross-reference. Paths are relative to `src/vendored/`.
+SHA-256 is the CI tripwire source of truth (`src/vendored/vendored_hashes.txt`, now
+20 files); the git blob OID is the pin cross-reference. Paths are relative to
+`src/vendored/`. Rows 1–16 are the Phase-0 statistical harness; the last 4 are the
+**Phase-2 feature primitives** (same pin, additive).
 
 | File | SHA-256 (prefix) | git blob | Certified by |
 |---|---|---|---|
@@ -93,8 +99,24 @@ the git blob OID is the pin cross-reference. Paths are relative to `src/vendored
 | `lab/research/validation/robustness.py` | `11f470ee402f` | `dfd1370cfae4` | `test_robustness.py`; golden `monte_carlo_sign_flip_seeded` |
 | `lab/research/validation/sharpe.py` | `d88ea2df39e0` | `16b9968f810d` | `test_metrics.py` |
 | `lab/research/validation/splitter.py` | `babbd7378d27` | `7a0f740d829d` | `test_validation_core.py` (PurgedKFold), `test_cpcv_pbo.py` |
+| `lab/data/__init__.py` *(P2)* | `f50acddd2d5c` | `20ef9b6c4da1` | import gate |
+| `lab/data/features/__init__.py` *(P2)* | `6973477c3b08` | `718ee37fb47f` | import gate |
+| `lab/data/features/ohlcv.py` *(P2)* | `9bd7bf80daa5` | `51388e30315e` | vendored `OHLCV` (bridge target) |
+| `lab/data/features/indicators.py` *(P2)* | `ec81b4dd296a` | `1bea0ea17ea8` | goldens `feature_gap`/`feature_atr`/`feature_cross_sectional_rank` + machinery-removal |
 
 Full 64-hex digests: `src/vendored/vendored_hashes.txt` (`sha256sum -c` compatible).
+
+### Phase-2 additive vendoring (feature primitives)
+`ohlcv.py` + `indicators.py` are vendored **byte-identical from the same pin** for
+three used primitives — `gap`, `atr` (`talib.ATR`), `cross_sectional_rank` — surfaced
+on the adapter for Signals A/A-Z and risk-parity sizing. Per the no-cherry-pick freeze
+rule, `indicators.py` brings ~40 unused single-name indicators along, **frozen** and
+hash-verified; only the **3 used** functions get golden-master reconciliation +
+machinery-removal falsification. The adapter converts `xsranker.core.types.OHLCV` →
+the vendored `OHLCV` (IST-localizing timestamps for the vendored `.date()` day
+grouping; int→float volume) — a load-bearing seam with its own gate-zero-class tests
+(`tests/test_ohlcv_bridge.py`). Goldens for the 3 were birthed in the predecessor env
+(numpy 2.4.6 / TA-Lib 0.7.0) and reconcile bit-for-bit here.
 
 ---
 

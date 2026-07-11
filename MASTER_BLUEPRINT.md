@@ -124,9 +124,25 @@ Write up the finding (null or edge) in `RESEARCH_FINDINGS.md`; the two condition
 | ID | Definition | Mechanism (a-priori) |
 |---|---|---|
 | **A** | rank by `(Open − PriorClose)/PriorClose`; short top-k, long bottom-k, hold to close | overnight overreaction corrected intraday (tug-of-war); strong India overnight-up/intraday-down asymmetry |
-| **A-Z** | rank by `raw_gap / ATR(20)` | tests the *anomaly-magnitude* hypothesis in the alpha logic (not the weights) |
+| **A-Z** | rank by **gap% ÷ ATR%** (`(Open−PriorClose)/PriorClose` ÷ `ATR(20)/price`) | tests the *anomaly-magnitude* hypothesis in the alpha logic (not the weights) |
 
 A vs A-Z is the sign-vs-magnitude test; both charged to the ledger.
+
+### Ambiguity resolved — A-Z normalization (2026-07-11)
+`raw_gap / ATR(20)` was under-specified on units. **Resolved and frozen 2026-07-11:**
+A-Z = **gap% ÷ ATR%** — the gap as a fraction divided by ATR-20 expressed in return
+units (ATR ÷ price). **Rationale (on the record):** the gap measured in units of the
+stock's normal daily move; **price-neutral by construction**. Note the two
+unit-consistent spellings are algebraically identical for ranking — `gap_₹ ÷ ATR_₹ =
+gap% ÷ ATR%` because `gap_₹ = gap%·price` and `ATR_₹ = ATR%·price`, so price cancels;
+there is no absolute-vs-relative *ranking* choice. **FORBIDDEN form:** the units-mixed
+`gap_fraction ÷ ATR_absolute_₹` (a fraction over a rupee figure), which is
+1/price-dependent and tilts the ranking toward high/low-priced names — that is the
+misbehavior guarded against. Implementation may use any algebraically-equivalent,
+unit-consistent spelling, but the recorded definition is gap% ÷ ATR%. A-Z also
+requires an **intraday→daily resample** before `atr(daily, 20)` (new Layer-2 code,
+carrying its own point-in-time test: no future bars in the entry day's daily
+aggregation).
 
 ## Frozen parameter ledger (blind, a-priori)
 | Parameter | Value | Swept? |

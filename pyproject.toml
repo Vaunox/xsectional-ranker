@@ -18,12 +18,12 @@ classifiers = [
 # locked numeric stack, so these are `==`, not floors, and uv.lock is committed.
 #
 # pyyaml/structlog/tzdata support config + logging scaffolding (new Layer, not
-# harness). TA-Lib / pandas / pyarrow / kiteconnect are deliberately ABSENT: the
-# feature primitives that need them are deferred to Phase 1 (they have no call
-# site yet — Completion Standard (a)).
+# harness). pyarrow (Phase 1) reads the cache; ta-lib (Phase 2) backs the vendored
+# `atr` primitive. pandas / kiteconnect remain deliberately ABSENT.
 dependencies = [
     "numpy==2.4.6",       # EXACT pin — frozen harness numeric core (Deep Dive 03 Check 4)
     "scipy==1.17.1",      # EXACT pin — normal CDF/PPF, skew/kurtosis for DSR/PSR/PBO
+    "ta-lib==0.7.0",      # EXACT pin — vendored feature primitives (atr) via TA-Lib (Phase 2)
     "pyarrow>=16",        # read the inherited external Parquet OHLCV cache (Layer 1 data seam)
     "pyyaml>=6.0.1",      # layered YAML config loader
     "structlog>=24.1.0",  # structured logging (IST, correlation IDs, redaction)
@@ -142,9 +142,9 @@ module = ["lab.*"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-# scipy/pyarrow ship incomplete inline types; skip following them so calls are Any
-# at the boundary rather than "untyped call" errors. Our signatures stay typed.
-module = ["scipy", "scipy.*", "pyarrow", "pyarrow.*"]
+# scipy/pyarrow/talib ship no (or incomplete) inline types; skip following them so
+# calls are Any at the boundary rather than "untyped call" errors. Our sigs stay typed.
+module = ["scipy", "scipy.*", "pyarrow", "pyarrow.*", "talib", "talib.*"]
 follow_imports = "skip"
 ignore_missing_imports = true
 

@@ -36,6 +36,10 @@ REQUIRED: dict[str, str] = {
     "effective_n_correlated_group": "one effective-N clustering of a known correlated group",
     "round_trip_cost": "one full round-trip cost",
     "monte_carlo_sign_flip_seeded": "one seeded Monte-Carlo robustness (RNG seed-lock)",
+    # Phase-2 vendored feature primitives (TA-Lib enters here; atr is bit-stability):
+    "feature_gap": "vendored gap (overnight gap) primitive",
+    "feature_atr": "vendored atr (talib.ATR) primitive — bit-stability",
+    "feature_cross_sectional_rank": "vendored cross_sectional_rank primitive",
 }
 
 

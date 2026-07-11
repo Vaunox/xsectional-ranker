@@ -41,6 +41,8 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import scipy
 
+from lab.data.features.indicators import atr, cross_sectional_rank, gap
+from lab.data.features.ohlcv import OHLCV as VendoredOHLCV  # noqa: N811 (class alias)
 from lab.research.trials.ledger import TrialLedger
 from lab.research.validation.costs import CostModel
 from lab.research.validation.cpcv import combinatorial_purged_cv
@@ -288,6 +290,79 @@ def compute_mc(inp: dict[str, Any]) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- #
+# Fixtures 7-9 — vendored FEATURE PRIMITIVES (Phase 2): gap, atr, xs-rank      #
+# --------------------------------------------------------------------------- #
+def _vendored_ohlcv_from(inp: dict[str, Any]) -> VendoredOHLCV:
+    return VendoredOHLCV(
+        timestamps=tuple(datetime.fromisoformat(s) for s in inp["timestamps"]),
+        open=np.asarray(inp["open"], dtype=np.float64),
+        high=np.asarray(inp["high"], dtype=np.float64),
+        low=np.asarray(inp["low"], dtype=np.float64),
+        close=np.asarray(inp["close"], dtype=np.float64),
+        volume=np.asarray(inp["volume"], dtype=np.float64),
+    )
+
+
+def build_feature_gap() -> dict[str, Any]:
+    # 3 IST days x 2 bars each; overnight gaps day2, day3 are the load-bearing output.
+    days = [datetime(2024, 1, d, 9, 15, tzinfo=IST) for d in (2, 3, 4)]
+    stamps = [d.isoformat() for d in days for _ in range(2)]
+    opens = [100.0, 100.5, 110.0, 110.5, 90.0, 90.5]
+    closes = [100.5, 101.0, 110.5, 111.0, 90.5, 91.0]
+    return {
+        "timestamps": stamps,
+        "open": opens,
+        "high": [c + 0.5 for c in closes],
+        "low": [o - 0.5 for o in opens],
+        "close": closes,
+        "volume": [1000.0] * 6,
+    }
+
+
+def compute_feature_gap(inp: dict[str, Any]) -> dict[str, Any]:
+    return {"gap": [None if np.isnan(x) else x for x in gap(_vendored_ohlcv_from(inp)).tolist()]}
+
+
+def build_feature_atr() -> dict[str, Any]:
+    rng = np.random.default_rng(717)
+    n = 40
+    base = 100.0 + np.cumsum(rng.normal(0.0, 0.5, n))
+    high = base + np.abs(rng.normal(0.0, 0.8, n))
+    low = base - np.abs(rng.normal(0.0, 0.8, n))
+    close = low + (high - low) * rng.random(n)
+    stamps = [datetime(2024, 1, 2, 9, 15, tzinfo=IST).isoformat()] * n  # atr ignores timestamps
+    return {
+        "timestamps": stamps,
+        "open": close.tolist(),
+        "high": high.tolist(),
+        "low": low.tolist(),
+        "close": close.tolist(),
+        "volume": [1000.0] * n,
+        "period": 14,
+    }
+
+
+def compute_feature_atr(inp: dict[str, Any]) -> dict[str, Any]:
+    result = atr(_vendored_ohlcv_from(inp), int(inp["period"]))
+    return {"atr": [None if np.isnan(x) else x for x in result.tolist()]}
+
+
+def build_feature_xs_rank() -> dict[str, Any]:
+    rng = np.random.default_rng(818)
+    panel = {sym: rng.normal(0.0, 1.0, 12).tolist() for sym in ("AAA", "BBB", "CCC", "DDD", "EEE")}
+    panel["BBB"][3] = float("nan")  # exercise the NaN-ignoring path
+    return {"panel": panel}
+
+
+def compute_feature_xs_rank(inp: dict[str, Any]) -> dict[str, Any]:
+    panel = {k: np.asarray(v, dtype=np.float64) for k, v in inp["panel"].items()}
+    ranked = cross_sectional_rank(panel)
+    return {
+        "ranks": {k: [None if np.isnan(x) else x for x in v.tolist()] for k, v in ranked.items()}
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Registry + driver                                                           #
 # --------------------------------------------------------------------------- #
 #: name -> (build_inputs, compute). The reconciliation test imports COMPUTERS.
@@ -298,6 +373,9 @@ BUILDERS: dict[str, Callable[[], dict[str, Any]]] = {
     "effective_n_correlated_group": build_ledger,
     "round_trip_cost": build_cost,
     "monte_carlo_sign_flip_seeded": build_mc,
+    "feature_gap": build_feature_gap,
+    "feature_atr": build_feature_atr,
+    "feature_cross_sectional_rank": build_feature_xs_rank,
 }
 COMPUTERS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "cpcv_path_distribution": compute_cpcv,
@@ -306,11 +384,21 @@ COMPUTERS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "effective_n_correlated_group": compute_ledger,
     "round_trip_cost": compute_cost,
     "monte_carlo_sign_flip_seeded": compute_mc,
+    "feature_gap": compute_feature_gap,
+    "feature_atr": compute_feature_atr,
+    "feature_cross_sectional_rank": compute_feature_xs_rank,
 }
 
 
-def _meta() -> dict[str, Any]:
-    return {
+#: Goldens whose computation enters the TA-Lib-backed indicator path (Phase-2 feature
+#: primitives). ONLY these record a ``talib`` version in meta. The Phase-0 masters were
+#: birthed in the predecessor env (no TA-Lib) and their values never touch it, so they
+#: MUST stay byte-frozen — stamping talib onto them would misrepresent their birth env.
+_TALIB_GOLDENS = frozenset({"feature_gap", "feature_atr", "feature_cross_sectional_rank"})
+
+
+def _meta(name: str) -> dict[str, Any]:
+    meta = {
         "predecessor_sha": "0c5c592b9bc80525625597906cdaf8d7f203bb13",
         "python": platform.python_version(),
         "numpy": np.__version__,
@@ -318,6 +406,9 @@ def _meta() -> dict[str, Any]:
         "generated_by": "scripts/generate_goldens.py",
         "note": "Birth in predecessor repo @ pinned SHA; verify in this repo (Check 2).",
     }
+    if name in _TALIB_GOLDENS:
+        meta["talib"] = __import__("talib").__version__
+    return meta
 
 
 def write_all(golden_dir: Path) -> None:
@@ -325,7 +416,7 @@ def write_all(golden_dir: Path) -> None:
     for name, build in BUILDERS.items():
         inputs = build()
         outputs = COMPUTERS[name](inputs)
-        payload = {"name": name, "meta": _meta(), "inputs": inputs, "outputs": outputs}
+        payload = {"name": name, "meta": _meta(name), "inputs": inputs, "outputs": outputs}
         path = golden_dir / f"{name}.json"
         # Force LF regardless of OS so goldens are byte-stable across platforms
         # (Windows write_text would otherwise emit CRLF and desync the fixtures).

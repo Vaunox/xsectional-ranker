@@ -66,5 +66,28 @@ universe:
 
 sector:
   # Static point-in-time sector classification (a label map, not a price series)
-  # feeding the later Phase-2 ceil(k/2) sector cap.
+  # feeding the Phase-2 ceil(k/2) sector cap.
   map_file: "sectors.yaml"
+
+# --------------------------------------------------------------------------- #
+# Layer 2 — Signal, Execution & Null (Phase 2).                                 #
+# TOY marks a value that is deliberately NOT the frozen research value — the real #
+# k / gross floor / N are committed BLIND at the Phase 2->3 boundary before the   #
+# first run. The pre-registered non-TOY frozen values (participation cap, spread  #
+# multipliers, ATR period, sector-cap divisor) are set here.                      #
+# --------------------------------------------------------------------------- #
+signal:
+  atr_period: 20               # ATR-20 (DAILY) for A-Z normalization + risk-parity (frozen)
+
+execution:
+  k_per_leg: 5                 # TOY (real k frozen at Phase 2->3)
+  participation_cap: 0.01      # <= 1% of entry-window volume (frozen, pessimistic)
+  gross_floor_inr: 1_000_000   # TOY (real gross-exposure floor frozen at Phase 2->3)
+  sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen)
+
+cost:
+  optimistic_spread_multiplier: 1.0    # raw Corwin-Schultz implied spread (frozen)
+  pessimistic_spread_multiplier: 3.0   # ~3x implied spread (frozen)
+
+null:
+  draws_per_day: 50            # TOY N (real null-draws-per-day frozen at Phase 2->3)

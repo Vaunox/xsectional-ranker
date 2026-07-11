@@ -24,12 +24,17 @@ are new Phase-2 code (carry-forward note, ``VENDORED_FROM.md``).
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
+
+import numpy as np
 
 # Vendored modules — imported module-qualified (never `from … import <name>`),
 # so calls stay late-bound for Check 3. This is the whole point of the boundary.
+from lab.data.features import indicators as _indicators
+from lab.data.features import ohlcv as _vendored_ohlcv
 from lab.research.trials import ledger as _ledger
 from lab.research.validation import costs as _costs
 from lab.research.validation import cpcv as _cpcv
@@ -38,6 +43,7 @@ from lab.research.validation import pbo as _pbo
 from lab.research.validation import robustness as _robustness
 from lab.research.validation import sharpe as _sharpe
 from xsranker.core.config import Settings
+from xsranker.core.types import OHLCV, FloatArray
 
 # Re-export the vendored result/value types so callers need not import lab.*.
 CPCVResult = _cpcv.CPCVResult
@@ -45,6 +51,8 @@ CPCVDistribution = _cpcv.CPCVDistribution
 PBOResult = _pbo.PBOResult
 CostModel = _costs.CostModel
 TrialLedger = _ledger.TrialLedger
+
+_IST = ZoneInfo("Asia/Kolkata")
 
 
 class HarnessAdapter:
@@ -210,3 +218,41 @@ class HarnessAdapter:
     def fraction_positive(self, values: Sequence[float]) -> float:
         """Fraction of finite values that are strictly positive."""
         return _robustness.fraction_positive(values)
+
+    # -- Feature primitives (Phase 2) + the OHLCV bridge ---------------------- #
+    def _to_vendored_ohlcv(self, series: OHLCV) -> _vendored_ohlcv.OHLCV:
+        """Bridge ``xsranker`` OHLCV -> the vendored OHLCV the frozen primitives expect.
+
+        Load-bearing seam (tested as a gate-zero-class check): timestamps become
+        **IST-localized** python datetimes so the vendored ``gap``'s ``.date()``
+        day-grouping falls on the correct IST calendar boundary; O/H/L/C pass through
+        as float64; and int volume becomes float64 (the vendored type's dtype). A
+        timezone slip or wrong day-open bar here silently corrupts the signal.
+        """
+        naive_utc = series.timestamp.astype("datetime64[us]").astype(object)
+        stamps = tuple(d.replace(tzinfo=UTC).astimezone(_IST) for d in naive_utc)
+        return _vendored_ohlcv.OHLCV(
+            timestamps=stamps,
+            open=series.open.astype(np.float64),
+            high=series.high.astype(np.float64),
+            low=series.low.astype(np.float64),
+            close=series.close.astype(np.float64),
+            volume=series.volume.astype(np.float64),
+        )
+
+    def gap(self, series: OHLCV) -> FloatArray:
+        """Per-bar overnight gap ``(day_open - prior_close)/prior_close`` (frozen `gap`)."""
+        result: FloatArray = _indicators.gap(self._to_vendored_ohlcv(series))
+        return result
+
+    def atr(self, series: OHLCV, period: int) -> FloatArray:
+        """ATR over ``period`` bars via the frozen `atr` (talib.ATR)."""
+        result: FloatArray = _indicators.atr(self._to_vendored_ohlcv(series), period)
+        return result
+
+    def cross_sectional_rank(
+        self, values_by_symbol: dict[str, FloatArray]
+    ) -> dict[str, FloatArray]:
+        """Point-in-time cross-sectional rank in [0,1] per timestamp (frozen primitive)."""
+        result: dict[str, FloatArray] = _indicators.cross_sectional_rank(values_by_symbol)
+        return result

@@ -23,15 +23,34 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pytest
 
 # Tests are exempt from the freeze boundary: they legitimately reach into vendored
 # internals to build fixtures and to stub entry points.
 from lab.core.types import BarInterval, Candle
 from xsranker.core.config import load_settings
+from xsranker.core.types import IST_OFFSET_NS, OHLCV
 from xsranker.harness.adapter import HarnessAdapter
 
 IST = ZoneInfo("Asia/Kolkata")
+
+
+def _xohlcv(day_opens: list[float]) -> OHLCV:
+    """A small xsranker OHLCV: one 09:15-IST bar per consecutive day."""
+    from datetime import date
+
+    ts = np.array(
+        [
+            np.datetime64(date(2024, 1, 2 + i), "ns")
+            + np.timedelta64(555 * 60, "s").astype("timedelta64[ns]")
+            - np.timedelta64(IST_OFFSET_NS, "ns")
+            for i in range(len(day_opens))
+        ],
+        dtype="datetime64[ns]",
+    )
+    o = np.asarray(day_opens, dtype=np.float64)
+    return OHLCV("X", "5minute", ts, o, o + 1.0, o - 1.0, o, np.full(len(o), 1000, dtype=np.int64))
 
 
 class MachineryRemovedError(RuntimeError):
@@ -163,6 +182,22 @@ def _c_fraction_positive(a: HarnessAdapter) -> None:
     assert a.fraction_positive([1.0, -1.0, 2.0, -3.0]) == 0.5
 
 
+def _c_gap(a: HarnessAdapter) -> None:
+    # day2 open 110 vs day1 close 100 -> gap 0.10
+    result = a.gap(_xohlcv([100.0, 110.0]))
+    assert result[-1] == pytest.approx(0.10)
+
+
+def _c_atr(a: HarnessAdapter) -> None:
+    result = a.atr(_xohlcv([100.0 + i for i in range(20)]), 5)
+    assert float(result[-1]) > 0.0
+
+
+def _c_cross_sectional_rank(a: HarnessAdapter) -> None:
+    ranked = a.cross_sectional_rank({"P": np.array([1.0, 5.0]), "Q": np.array([9.0, 1.0])})
+    assert list(ranked["P"]) == [0.0, 1.0]
+
+
 #: surface name -> (vendored entry point to stub, certifying check).
 SURFACE: dict[str, tuple[str, Callable[[HarnessAdapter], None]]] = {
     "per_period_sharpe": ("lab.research.validation.sharpe.per_period_sharpe", _c_per_period_sharpe),
@@ -208,6 +243,12 @@ SURFACE: dict[str, tuple[str, Callable[[HarnessAdapter], None]]] = {
     "fraction_positive": (
         "lab.research.validation.robustness.fraction_positive",
         _c_fraction_positive,
+    ),
+    "gap": ("lab.data.features.indicators.gap", _c_gap),
+    "atr": ("lab.data.features.indicators.atr", _c_atr),
+    "cross_sectional_rank": (
+        "lab.data.features.indicators.cross_sectional_rank",
+        _c_cross_sectional_rank,
     ),
 }
 
