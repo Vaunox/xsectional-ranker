@@ -132,3 +132,10 @@ gate:
   near_margin_percentile: 2.0  # points around the null-percentile bar
   near_margin_prob: 0.02       # around the DSR / PBO / positive-fraction bars
   near_margin_sharpe: 0.02     # around the CPCV median bar
+  # CPCV / PBO structural params — PINNED PRE-RUN (pre-registration addendum, Step 3a,
+  # operator-approved). They shape the gate, so they carry the same "fixed before the
+  # result" guarantee as the four blind values; none is outcome-derived.
+  cpcv_n_groups: 6             # C(6,2)=15 CPCV paths: a power/compute balance at ~2,700 obs
+  cpcv_k_test: 2               # test groups per CPCV combination
+  pbo_n_splits: 16             # CSCV blocks — the vendored harness default (DEFAULT_N_SPLITS)
+  periods_per_year: 252        # daily trading-day annualization

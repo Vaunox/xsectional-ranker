@@ -12,7 +12,7 @@ from collections.abc import Mapping
 import pytest
 
 from xsranker.core.config import Settings, load_settings
-from xsranker.gate.config import load_gate_thresholds
+from xsranker.gate.config import load_gate_structural, load_gate_thresholds
 
 _FULL_BLOCK = {
     "null_percentile": 95,
@@ -62,3 +62,12 @@ def test_loader_fails_closed_on_a_missing_key() -> None:
     partial = {"null_percentile": 95}
     with pytest.raises(ValueError):
         load_gate_thresholds(_settings_with_gate(partial))
+
+
+def test_structural_params_are_pinned_in_the_committed_config() -> None:
+    # Pre-run addendum: the real default.yaml pins these BEFORE any result (provenance).
+    s = load_gate_structural(load_settings())
+    assert s.cpcv_n_groups == 6
+    assert s.cpcv_k_test == 2
+    assert s.pbo_n_splits == 16
+    assert s.periods_per_year == 252.0

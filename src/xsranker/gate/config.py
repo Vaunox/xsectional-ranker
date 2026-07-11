@@ -69,3 +69,35 @@ def load_gate_thresholds(settings: Settings) -> GateThresholds:
         near_margin_prob=float(_req(g, "near_margin_prob")),
         near_margin_sharpe=float(_req(g, "near_margin_sharpe")),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class GateStructuralConfig:
+    """CPCV/PBO structural params — pinned PRE-RUN (Step 3a addendum).
+
+    Not among the four blind values, but they shape the gate, so they carry the same
+    "fixed before the result" guarantee; none is outcome-derived.
+    """
+
+    cpcv_n_groups: int
+    cpcv_k_test: int
+    pbo_n_splits: int
+    periods_per_year: float
+
+
+def load_gate_structural(settings: Settings) -> GateStructuralConfig:
+    """Build the pinned CPCV/PBO structural params from the ``gate:`` block.
+
+    Raises:
+        ValueError: if the ``gate`` block or any required key is absent.
+    """
+    raw = settings.raw
+    if "gate" not in raw:
+        raise ValueError("config: missing 'gate' block")
+    g = raw["gate"]
+    return GateStructuralConfig(
+        cpcv_n_groups=int(_req(g, "cpcv_n_groups")),
+        cpcv_k_test=int(_req(g, "cpcv_k_test")),
+        pbo_n_splits=int(_req(g, "pbo_n_splits")),
+        periods_per_year=float(_req(g, "periods_per_year")),
+    )
