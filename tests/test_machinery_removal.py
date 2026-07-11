@@ -28,7 +28,6 @@ import pytest
 # Tests are exempt from the freeze boundary: they legitimately reach into vendored
 # internals to build fixtures and to stub entry points.
 from lab.core.types import BarInterval, Candle
-
 from xsranker.core.config import load_settings
 from xsranker.harness.adapter import HarnessAdapter
 

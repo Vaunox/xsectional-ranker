@@ -14,10 +14,10 @@ from pathlib import Path
 
 import numpy as np
 import scipy
+
 from scripts.check_freeze_boundary import check as boundary_check
 from scripts.check_vendored_hashes import MANIFEST, VENDORED_DIR
 from scripts.check_vendored_hashes import check as hash_check
-
 from xsranker.core.config import load_settings
 from xsranker.harness.adapter import HarnessAdapter
 

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 from scripts.generate_goldens import COMPUTERS
 
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden"

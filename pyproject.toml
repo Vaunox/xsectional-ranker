@@ -90,6 +90,16 @@ ignore = ["E501", "D105", "D107"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.isort]
+# Import grouping must be deterministic across environments: a fresh CI checkout
+# (no installed package) must classify first-party imports exactly as a local
+# working tree does. detect-same-package=false disables environment-dependent
+# auto-detection, so classification comes ONLY from the explicit list below —
+# otherwise isort I001 flags differ between local and CI (as they did on the
+# first Phase-1 push).
+known-first-party = ["xsranker", "lab", "scripts"]
+detect-same-package = false
+
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

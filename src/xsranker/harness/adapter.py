@@ -37,7 +37,6 @@ from lab.research.validation import metrics as _metrics
 from lab.research.validation import pbo as _pbo
 from lab.research.validation import robustness as _robustness
 from lab.research.validation import sharpe as _sharpe
-
 from xsranker.core.config import Settings
 
 # Re-export the vendored result/value types so callers need not import lab.*.

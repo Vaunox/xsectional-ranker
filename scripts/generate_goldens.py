@@ -40,6 +40,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import scipy
+
 from lab.research.trials.ledger import TrialLedger
 from lab.research.validation.costs import CostModel
 from lab.research.validation.cpcv import combinatorial_purged_cv
