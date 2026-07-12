@@ -61,6 +61,23 @@ a good result**, not by whether a return stream was persisted (a bookkeeping fac
 - First application: candidate #2's **V / V-A were D8-screened out and are NOT charged**; **V_resid**
   (run on returns) IS charged — cumulative ledger = candidate #1's 6 arms + V_resid's 3.
 
+### Two-gate feature policy (operator-ruled 2026-07-12) — vetting ≠ contribution
+The stable is built with **two** gates, not one (the IPO advisor's own architecture — GMP was in the
+model, measured, found not to contribute, and removed):
+- **Entry gate — standalone vetting.** A feature enters the pool ONLY by showing a **real, independent
+  edge alone** (beats random + independent axis). Gap A-Z: **yes** (banked). V_resid: **no** (coin
+  flip → dead). This is what stops the pool becoming a **feature zoo** — you do NOT throw ~250 features
+  in and let the model sort them out (that overfits ~2,200 noisy days, and the effective-N-deflated
+  DSR bar — now 8.97 — correctly kills it).
+- **Retention gate — marginal contribution.** Once in the model, a feature stays only if it
+  **measurably improves the held-out metric**, and is cut if it does not (cf. GMP).
+- **Vetting gets you into the room; contribution keeps you there.** A **standalone-KILL** (dead to
+  trade alone) with a real edge is **BANKED** as a provisional feature, not deleted — killing every
+  slightly-positive component destroys the ensemble's building blocks (capstone §2). A **zero-edge**
+  result (V_resid) is genuinely dead: nothing to bank. **Small ≠ zero.**
+- Stable membership (2026-07-12): **1 provisional member** — candidate #1 gap A-Z (banked,
+  survivorship-asterisked). Candidate #2 volume-delta: fully dead (V/V-A momentum; V_resid zero edge).
+
 ---
 
 ## Session log

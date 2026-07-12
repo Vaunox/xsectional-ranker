@@ -7,7 +7,7 @@ A market-neutral, cross-sectional intraday ranker (overnight-gap **reversal** �
 1. **A genuine but tiny gross selection edge.** Against a *corrected* execution-matched null, the vol-adjusted **A-Z 15/30 beat random** — a real, cost-robust **gross selection alpha of ≈ +10 bps/day** (this reverses the original, contaminated "no edge" claim).
 2. **The edge does not clear the fee floor.** The ~+10–13 bps/day gross barely exceeds the exact, **Zerodha-verified statutory fees alone (~9 bps/day at the book level)**. At **zero spread**, on survivorship-inflated data — the most generous case that exists — it nets **+2.9 / +2.1 / −0.5 bps/day: breakeven at best**, and decisively negative once any real spread (>0) or the survivorship correction is applied. **This holds with the Corwin-Schultz spread estimator removed entirely** — the verdict depends on no spread model.
 
-The earlier **−74 to −220 bps/day** figures were **Corwin-Schultz-inflated** (CS over-reads spread ~2–3× on the traded extreme-gap names, confirmed against Abdi-Ranaldo) and are demoted to a spread-sensitivity range (§5.3). Beating a cost-bled random book is **necessary but not sufficient**; the fee floor decides. Phase-1 **survivorship-inflated upper bound** (a KILL here is hyper-trustworthy) at **small book size** (§6). The gap family is retired for direct intraday trading (§9); a low-turnover carry-forward is left open, explicitly not licensed.
+The earlier **−74 to −220 bps/day** figures were **Corwin-Schultz-inflated** (CS over-reads spread ~2–3× on the traded extreme-gap names, confirmed against Abdi-Ranaldo) and are demoted to a spread-sensitivity range (§5.3). Beating a cost-bled random book is **necessary but not sufficient**; the fee floor decides. Phase-1 **survivorship-inflated upper bound** (a KILL here is hyper-trustworthy) at **small book size** (§6). The gap **A-Z** arms are standalone-KILLed for direct intraday trading but **BANKED as a provisional fusion feature** — a real ~12.6 bps selection edge (beats random decisively), survivorship-asterisked (§9); a low-turnover direct-trading lead is left open, not licensed.
 
 ## 1. Objective & scope
 Does a cross-sectional overnight-gap-**reversal** ranker, held entry-to-close in a market-neutral book, beat a random long-k/short-k selection **net of cost** *and* make money in absolute terms? Phase 1 is an **upper-bound smoke test** on a survivor cache: a KILL is hyper-trustworthy, a PASS is provisional-only. Exploration-grade throughout.
@@ -107,7 +107,25 @@ On this survivor-cache upper bound, the cross-sectional overnight-gap-**reversal
 
 **What it does not claim:** nothing about a real, delisted-inclusive universe (Phase 4); nothing about deployable capacity beyond the ₹3–5M finding.
 
-**Carry-forward (open Phase-4 question, explicitly NOT licensed now):** the weak-but-real ~10 bps/day selection signal might be worth revisiting *only* in a form that does not pay the fee floor every day — i.e. **drastically lower turnover / longer hold**. Recorded as a lead, not a decision; the gap family is **retired for direct intraday trading**, and per the roadmap this routes to candidate search.
+**Disposition (amended 2026-07-12) — standalone-KILL; BANKED as a provisional feature.** The gap
+**A-Z** arms are **NOT fully retired.** They carry a **real, measurable selection edge** — the
+z-scored arms beat the execution-matched random book **decisively** (beat% 100, DSR ≈ 1.0) — and
+*signal is exactly what the fusion engine eats*. Per the capstone (`POST_PROJECT_DIRECTIONS.md` §2:
+"components may be weak — decisiveness is demanded at the **ensemble**, not the component; killing
+every slightly-positive component individually destroys the building blocks the ensemble is made
+of"), a component with a real edge is **banked**, never deleted. Three inseparable stamps:
+1. **Standalone-dead** — cannot trade alone (~+12.6 bps gross ≈ the ~9–14 bps fee floor). **Verdict
+   unchanged.**
+2. **Real selection edge** — ~+12.6 bps/day gross, beats random decisively. This is *why* it is banked.
+3. **Survivorship-inflated asterisk** — the signal longs the gap-downs (dying-stock profile), so the
+   true out-of-sample edge is **below 12.6 and unmeasured**; its seat is **provisional pending
+   Phase-4 point-in-time measurement.**
+
+The gap A-Z form is the stable's **first (provisional) member.** **Small ≠ zero:** candidate #1 has
+a *small real* edge (banked); the retired candidate-#2 V_resid had *zero* edge (beat% ~50, DSR 0,
+gross ≈ 0 — a coin flip, genuinely dead, nothing to fuse). The stable now holds **one provisional
+member**, not two, and not zero. (The low-turnover / longer-hold direct-trading lead from §9 is
+still open but explicitly NOT licensed — that is separate from the banking.)
 
 ## 10. Reproducibility appendix
 - **Universe:** `config/universe/survivor_cache.yaml` (49 NIFTY-50 survivors). Cache read-only via `XSR_DATA_CACHE_PATH`; regular-session filtered 09:15–15:30 IST.
