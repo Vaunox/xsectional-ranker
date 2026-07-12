@@ -65,6 +65,13 @@ class CostCorridorConfig:
     pessimistic_spread_multiplier: float  # CS mode only
     optimistic_spread_bps: float  # fixed mode only (round-trip proportional spread, bps)
     pessimistic_spread_bps: float  # fixed mode only
+    #: Per-name deployment notional (INR) at which the size-aware statutory FEES are charged in
+    #: FIXED_SPREAD mode. This is the ACTUAL trade size (deployment capital / (2 * k)), NOT the
+    #: liquidity-max book notional the truncation sizes to for capacity/day-drop. The verified fee
+    #: model is size-dependent via the per-order brokerage cap, so pricing fees at the true small
+    #: deployment size is materially more conservative than at the liquidity-max notional. CS mode
+    #: (historical regen) ignores this and prices fees at the book notional for stream fidelity.
+    deployment_notional_inr: float = 10_000.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +114,7 @@ def load_layer2_config(settings: Settings) -> Layer2Config:
             ),
             optimistic_spread_bps=float(_req(cost, "optimistic_spread_bps", "cost")),
             pessimistic_spread_bps=float(_req(cost, "pessimistic_spread_bps", "cost")),
+            deployment_notional_inr=float(_req(cost, "deployment_notional_inr", "cost")),
         ),
         null=NullConfig(draws_per_day=int(_req(null, "draws_per_day", "null"))),
     )

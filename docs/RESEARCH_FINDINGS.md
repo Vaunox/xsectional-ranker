@@ -91,6 +91,26 @@ The random long-k/short-k null selection was **infeasible on ~50% of draws** (a 
 ### 7.4 Cost symmetry (estimator-independent)
 Signal and null pass through the **identical** cost function (`_book_returns` → `_position_costs`); confirmed by code and empirically (per-name cost for a name held by both books agrees to <6 bps, the residual being different notional, not a different charge). This symmetry holds under any spread estimator, so it is not disturbed by the CS→fees+AR correction; the CS-based per-name magnitudes quoted in the blind run (~42/114 bps) are themselves over-read per §5.3.
 
+### 7.5 Cost corridor RE-PINNED to deployment economics (blind, pre-candidate-#3-verdict, 2026-07-12)
+New information — the actual deployment size (**₹1 lakh capital, k=5 → ₹10,000 per name**) — changed the corridor materially in **both** directions. Re-pinned BLIND before any candidate-#3 return was seen. The old corridor was wrong two ways at once: fees under-charged, spread wildly over-charged.
+
+**The re-pinned corridor (the live standard going forward):**
+| bound | size-aware fees @ ₹10k | + spread (NSE-anchored) | **break-even gross** |
+|---|---|---|---|
+| optimistic | 10.605 bps | 1 bps | **11.60 bps/day** |
+| pessimistic | 10.605 bps | 5 bps | **15.60 bps/day** |
+
+1. **Fees were UNDER-charged — now size-aware at the true deployment notional.** The verified fee model (§7.3) was always size-dependent via the **₹20-per-order brokerage cap**, but the runs priced fees at the *liquidity-max book notional* (~₹0.6–1M/name, the truncation's capacity size) → only **~4–4.5 bps**. Deployment is ₹10k/name, where fees are **10.605 bps round-trip**. Fees are now charged at a pinned `deployment_notional_inr` (= capital / 2k), **decoupled from the capacity sizing** (which still drives the gross-floor day-drop — different question, both notional-independent fractions, §ruling seam 1).
+   - **Fees are FLAT at 10.605 bps for any per-name notional below ~₹66,667** (where 0.03% first exceeds the ₹20 cap). **CORRECTION ON THE RECORD (operator, 2026-07-12):** this **kills the idea that k is a fee lever at ₹1L capital** — k=3/5/10 all deploy < ₹66.7k/name and pay the identical 10.605 bps. A prior suggestion that fewer names → lower fees was **wrong at this capital**; k only becomes a fee lever above ~₹67k/name (i.e., much larger capital). Recorded so the dead option is not silently re-proposed.
+
+2. **Spread was OVER-charged — Abdi-Ranaldo RETIRED, replaced by NSE's PUBLISHED impact cost.** The old 18 bps pessimistic was AR-median magnitude. **NSE publishes the authoritative execution-cost measure** — official monthly impact cost per Nifty-50 constituent, defined as degradation vs the bid-offer **mid** (it *does* walk the book). Corroborated: **Nifty-50 impact cost = 0.02% ≈ 2 bps one-way at a ₹50 lakh basket** (~4 bps round-trip). We trade **₹10k = 500× smaller**, deep inside top-of-book. Pinned optimistic **1 bps**, pessimistic **5 bps** (NSE's ~4 bps @ ₹50L rounded up — deliberately conservative since our size is 500× smaller). **AR is retired from the live corridor exactly as CS was (§5.3): estimators over-read; NSE publishes the real number.** `abdi_ranaldo_spread` / `corwin_schultz_spread` stay in code for history only.
+
+3. **Liquidity-selection check (first-class, return-blind).** Unlike candidate #1 (which longs the *extreme-gap thin tail*, §6), **candidate #3's SR does NOT select the illiquid tail.** Over 2,814 days the SR-traded extremes sit at liquidity **percentile mean 0.547 / median 0.559** (0.5 = neutral) — *slightly deeper* than average, because SR is sector-relative and its most-traded names (SHRIRAMFIN, COALINDIA, BPCL, ONGC, RELIANCE) are ₹45–280 cr/morning. **₹10k participation in even the thinnest selected name: median 0.0104%, worst-ever 1.35%.** This is a **real structural difference between the two signals** and is what *justifies the tight spread bound* — no worst-name penalty is warranted, so the universe-representative NSE regime (already overstated 500×) applies.
+
+4. **THE SMALL-CAPITAL PENALTY (first-class deployment finding — arguably the program's most important economic constraint).** At **₹1 lakh** the break-even bar is **11.6–15.6 bps/day**; at **₹50 lakh/name** it is **~6.5 bps** (fees ~4.5 + comparable small spread) — roughly **half**. The gap is almost entirely the brokerage-cap fee effect. **The same signal can be viable at scale and dead at ₹1 lakh.** Small capital is structurally penalised; this is not a property of any one candidate but of the deployment size, and it stamps every Phase-1 verdict. A signal killed at ₹1L is *not* proven dead at ₹50L — the corridor is a moving, capital-dependent bar.
+
+**This re-pin does NOT resurrect candidate #1.** Its ~12.6 bps gross would clear the new *optimistic* bar (11.6) by ~1 bps but **fail the pessimistic** (15.6) — and it is survivorship-inflated (§2.1), so its true OOS gross is lower still. **It stays dead.** The corridor change is a cost-model correction that applies to every future candidate, **not a rescue** of a killed one.
+
 ## 8. Diagnostics (logged, not gates)
 | arm | surviving days | signal day-drop (₹100k floor) | null-draw-drop | null median net (opt/pess) | short-ban | circuit-flag | sector-conc |
 |---|--:|--:|--:|--:|--:|--:|--:|

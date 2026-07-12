@@ -91,13 +91,18 @@ execution:
   participation_cap: 0.01      # <= 1% of entry-window volume (frozen Phase 2, pessimistic)
   # gross floor = ₹100,000 (RE-FROZEN BLIND v2, 2026-07-11; supersedes the ill-posed
   # ₹5,000,000 of Step 2 — that value stays in history at `pre-registration-frozen`).
-  # WHY v2: the Step-2 rationale ("floor where bps dominate fixed cost") was ill-posed —
-  # the frozen cost model is SCALE-INVARIANT (flat ~16-23 bps, no fixed component), so no
-  # cost-mechanical floor exists at all. The ONLY small-size effect is integer-share
-  # granularity; ₹100,000 is the MINIMAL floor at which every selected name forms a real
-  # whole-share position (below it, per-name notional < ₹20k = single-digit shares of a
-  # high-priced name — not a formable book). NOT tuned to a survival rate; chosen with
-  # ZERO sight of any return (the only reason a re-freeze is legitimate).
+  # WHY v2: the Step-2 rationale ("floor where bps dominate fixed cost") was ill-posed. The
+  # ₹100,000 value stands on ONE basis: integer-share formability — it is the MINIMAL floor at
+  # which every selected name forms a real whole-share position (below it, per-name notional
+  # < ₹20k = single-digit shares of a high-priced name — not a formable book). NOT tuned to a
+  # survival rate; chosen with ZERO sight of any return (the only reason a re-freeze is legitimate).
+  # CORRECTION (2026-07-12, error trail preserved per operator): the v2 note ALSO claimed "the
+  # frozen cost model is SCALE-INVARIANT (no fixed component), so no cost-mechanical floor exists."
+  # That premise is FALSE — cost IS size-dependent: the ₹20-per-order brokerage cap is a fixed
+  # component, so fees are flat ~10.6 bps below ~₹66.7k/name and fall above (§7.5). At the time we
+  # wrongly believed cost had no fixed component. This does NOT change the ₹100k value: the floor
+  # guards liquidity-max CAPACITY (a day-drop test), which is separate from the fixed ₹10k
+  # deployment cost (§7.5 seam 1), and the integer-share basis above is untouched.
   # SIZE CAVEAT (stamped on every result, never separable from an "it works" reading):
   # the strategy structurally selects thin extreme-gap names, so the median feasible book
   # is only ₹3-5M with a fat low tail; at this floor integer-share tracking error (up to
@@ -109,13 +114,24 @@ execution:
   sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen Phase 2)
 
 cost:
-  # Candidate #2+ LIVE STANDARD cost model (RESEARCH_FINDINGS §7.3; pre-registration §8, tag
-  # `candidate-2-preregistration`): verified statutory fees + a pinned FIXED spread. Corwin-
-  # Schultz is RETIRED from the live corridor — it over-reads ~2-3x on the gap-selected names
-  # (§5.3), which produced candidate #1's inflated -74/-220. Pinned BLIND before any cand-#2 run.
+  # LIVE STANDARD cost model, RE-PINNED to deployment economics (RESEARCH_FINDINGS §7.5; blind,
+  # pre-cand-#3-verdict, 2026-07-12): verified size-aware statutory FEES at the true per-name
+  # deployment notional + a FIXED spread anchored on NSE's PUBLISHED impact cost. Two estimators
+  # now RETIRED from the live corridor for the same reason — estimators over-read, NSE publishes
+  # the real number: Corwin-Schultz (§5.3, ~2-3x over-read, retired at cand-#2) AND Abdi-Ranaldo
+  # (the basis of the old 18 bps; NSE Nifty-50 impact cost is 0.02% = ~2 bps one-way @ ₹50L, and we
+  # trade ₹10k = 500x smaller, deep inside top-of-book — realistic round-trip impact ~1-5 bps, not
+  # 18). `abdi_ranaldo_spread` / `corwin_schultz_spread` stay in code for history only.
   mode: "fixed_spread"
-  optimistic_spread_bps: 5      # fees + 5 bps round-trip (conservative lower-bound spread)
-  pessimistic_spread_bps: 18    # fees + 18 bps round-trip (AR-median magnitude, uniform; NOT per-name AR)
+  # Per-name deployment notional = ₹1L capital / (2*k=10 names) = ₹10,000. Fees are computed here
+  # (size-aware model): ~10.6 bps round-trip, FLAT for any per-name notional < ~₹66.7k (below which
+  # the ₹20 brokerage cap does not bind), so the exact small value is immaterial. At the old
+  # liquidity-max book notional (~₹0.6-1M/name) fees were only ~4-4.5 bps — the understatement.
+  deployment_notional_inr: 10_000
+  optimistic_spread_bps: 1      # fees + 1 bps round-trip: ₹10k crosses a sliver of top-of-book
+  pessimistic_spread_bps: 5     # fees + 5 bps round-trip: NSE ₹50L round-trip impact (~4 bps) rounded
+                                # up; conservative since our trade is 500x smaller. SR selection is
+                                # liquidity-NEUTRAL (checked: sel-pctile 0.55), so no worst-name penalty.
   # Corwin-Schultz multipliers — RETAINED ONLY to regenerate candidate #1's ledger streams at
   # historical fidelity (the cost model in force when they ran). scripts/regenerate_ledger.py
   # pins CORWIN_SCHULTZ mode explicitly; the LIVE corridor uses `mode` above and never these.

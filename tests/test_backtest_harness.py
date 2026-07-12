@@ -23,7 +23,13 @@ from xsranker.backtest.harness import SymbolDay, build_symbol_days, run_arm
 from xsranker.backtest.report import run_program
 from xsranker.core.config import load_settings
 from xsranker.core.types import IST_OFFSET_NS, OHLCV
-from xsranker.execution.config import FIXED_SPREAD, CostCorridorConfig, ExecutionConfig
+from xsranker.execution.book import Book, Position, Side
+from xsranker.execution.config import (
+    CORWIN_SCHULTZ,
+    FIXED_SPREAD,
+    CostCorridorConfig,
+    ExecutionConfig,
+)
 from xsranker.execution.pipeline import SymbolInputs
 from xsranker.gate.config import GateThresholds
 from xsranker.harness.adapter import HarnessAdapter
@@ -263,6 +269,74 @@ def _ohlcv(symbol: str, per_day: list[tuple[date, float, float, float]]) -> OHLC
         np.array(c),
         np.full(len(c), 100_000, dtype=np.int64),
     )
+
+
+def _cost_cfg(mode: str, opt_bps: float, pess_bps: float, deploy: float) -> CostCorridorConfig:
+    return CostCorridorConfig(
+        mode=mode,
+        optimistic_spread_multiplier=1.0,
+        pessimistic_spread_multiplier=3.0,
+        optimistic_spread_bps=opt_bps,
+        pessimistic_spread_bps=pess_bps,
+        deployment_notional_inr=deploy,
+    )
+
+
+def _two_name_book(notional: float) -> tuple[Book, dict[str, SymbolDay]]:
+    book = Book(
+        (Position("L", Side.LONG, "S1", 1.0, notional),),
+        (Position("S", Side.SHORT, "S2", 1.0, notional),),
+        gross_inr=notional,
+    )
+    by_symbol = {"L": _sym_day("L", "S1", -0.03, 0.0), "S": _sym_day("S", "S2", 0.03, 0.0)}
+    return book, by_symbol
+
+
+def test_fixed_spread_charges_fees_at_deployment_notional_not_book_notional() -> None:
+    """The live corridor prices the size-aware fees at the ₹10k DEPLOYMENT notional, independent
+    of the (liquidity-max) book notional the truncation produced -> 10.605 bps fees + spread."""
+    from xsranker.backtest.harness import _position_costs
+
+    cm = _adapter().load_cost_model()
+    cfg = _cost_cfg(FIXED_SPREAD, 1.0, 5.0, 10_000.0)
+    book_big, by_big = _two_name_book(5_000_000.0)  # huge book notional
+    book_sml, by_sml = _two_name_book(50_000.0)  # small book notional
+    opt_big, pess_big = _position_costs(book_big, by_big, cm, cfg, 0.01)
+    opt_sml, _ = _position_costs(book_sml, by_sml, cm, cfg, 0.01)
+    # cost fraction is INDEPENDENT of the book notional (fees priced at deployment size)
+    assert opt_big["L"] == opt_big["S"] == opt_sml["L"]
+    # equals verified fees(₹10k)=10.605 bps + the pinned spread, at both bounds
+    assert abs(opt_big["L"] * 1e4 - 11.605) < 5e-2
+    assert abs(pess_big["L"] * 1e4 - 15.605) < 5e-2
+
+
+def test_deployment_notional_pricing_is_strictly_more_conservative_than_book() -> None:
+    """Teeth for the fix: pricing fees at ₹10k costs MORE (bps) than at the old liquidity-max
+    book notional — the understatement the re-pin corrects (the ₹20 brokerage cap only bites large).
+    """
+    from xsranker.backtest.harness import _position_costs
+
+    cm = _adapter().load_cost_model()
+    book, by_symbol = _two_name_book(1_000_000.0)
+    small_deploy = _cost_cfg(FIXED_SPREAD, 1.0, 5.0, 10_000.0)
+    large_deploy = _cost_cfg(FIXED_SPREAD, 1.0, 5.0, 1_000_000.0)
+    opt_small, _ = _position_costs(book, by_symbol, cm, small_deploy, 0.01)
+    opt_large, _ = _position_costs(book, by_symbol, cm, large_deploy, 0.01)
+    assert opt_small["L"] > opt_large["L"]  # ₹10k deployment pays materially more fees than ₹1M
+
+
+def test_cs_mode_still_prices_fees_at_book_notional_for_regen_fidelity() -> None:
+    """CS mode (candidate-#1 regen) IGNORES the deployment notional and prices at the book
+    notional, so the historical streams stay byte-reproducible — changing book size changes cost."""
+    from xsranker.backtest.harness import _position_costs
+
+    cm = _adapter().load_cost_model()
+    cfg = _cost_cfg(CORWIN_SCHULTZ, 1.0, 3.0, 10_000.0)  # deployment_notional is inert in CS mode
+    book_a, by_a = _two_name_book(100_000.0)
+    book_b, by_b = _two_name_book(1_000_000.0)
+    opt_a, _ = _position_costs(book_a, by_a, cm, cfg, 0.01)
+    opt_b, _ = _position_costs(book_b, by_b, cm, cfg, 0.01)
+    assert opt_a["L"] != opt_b["L"]  # CS reads the book notional -> size-dependent (unchanged)
 
 
 def test_assembly_from_ohlcv_wires_the_primitives() -> None:

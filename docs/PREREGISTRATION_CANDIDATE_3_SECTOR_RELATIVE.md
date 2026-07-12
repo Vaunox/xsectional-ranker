@@ -139,3 +139,51 @@ the standard null-health / signal-day-drop / short-ban.
 independence screen BLIND against the pinned distinctness band (§7) → bring the numbers → the single
 verdict run follows **only if** the distinctness gate clears. `src/vendored/` pristine; recorded
 verdicts untouched.
+
+---
+
+## POST-FREEZE ADDENDUM (2026-07-12, pre-verdict; operator sign-off)
+
+Machinery committed at `772dfef` (SR/SR-Z + reusable independence screen + teeth). This addendum is
+BLIND — appended before any candidate-#3 return was seen. It supersedes the two provisional §8 rows it
+touches (screen outcome; cost corridor).
+
+### A. Independence screen — DISTINCTNESS GATE CLEARED
+All six gate rows (SR & SR-Z × {15,30,45}) vs the banked candidate-#1 gap land at **|xs-Spearman|
+0.16–0.19 ≪ 0.5 → distinct**, stable across arms and windows. SR is an **independent partner** for the
+banked gap, not a relabelled copy — the first candidate that is both independent and has a valid
+intraday-accrual mechanism. D1 diagnostic reproduced exactly (SR defined for 37/49; 12 excluded).
+
+### B. The morning-momentum diagnostic (0.77) — recorded VERBATIM (operator ruling)
+The non-gate diagnostic corr(SR, morning return) ≈ **0.766–0.769** rank (Pearson ~0.815). The
+pre-registration *predicted* this (SR openly IS a price signal, unlike candidate #2's V which falsely
+claimed to be flow), and nothing in the stable is raw momentum, so there is **no independence conflict
+today**. On the record, verbatim, to be carried into the verdict:
+
+> *If SR shows an edge, it is substantially an intraday-reversal-on-the-morning-move effect wearing a
+> sector-relative label; sector-demeaning supplies only ~41% of the rank variance. Whether the sector
+> framing earns its seat over plain reversal is a retention-gate / Phase-4 question.*
+
+### C. Cost corridor RE-PINNED (supersedes §8 "fees + fixed 5/18 bps")
+Re-pinned BLIND to deployment economics (₹1L capital, k=5 → ₹10k/name); full rationale in
+RESEARCH_FINDINGS **§7.5**. **Size-aware fees @ ₹10k = 10.605 bps** + NSE-published-impact spread
+(Abdi-Ranaldo retired like Corwin-Schultz): **optimistic 1 bps, pessimistic 5 bps**.
+
+| bound | break-even gross |
+|---|---|
+| optimistic (fees 10.605 + 1) | **11.60 bps/day** |
+| pessimistic (fees 10.605 + 5) | **15.60 bps/day** |
+
+Return-blind liquidity check justifies the tight spread: SR-selected names sit at liquidity percentile
+~0.55 (slightly deeper than neutral), ₹10k participation ~0.01% of morning volume — **SR does not
+select the thin tail** (a real structural difference from candidate #1). The verdict runs under THIS
+corridor.
+
+### D. Verdict stamps (inseparable from any "it works" reading of candidate #3)
+1. **Exploration-grade** — Phase-1 existence test, not a deployment license.
+2. **Survivorship-asterisked** — survivor-only universe (§2.1); true OOS edge unmeasured.
+3. **₹10k/name integer-share tracking error is material and uncosted** — at the deployment size the
+   share-granularity drag is *worse* than the ~10 bps flagged at candidate #1's floor (§6); it is a
+   real, uncosted deployment drag and is NOT in the corridor.
+4. **Capital-dependent bar** — the 11.6–15.6 bps break-even is a ₹1L figure; ~6.5 bps at ₹50L (§7.5).
+   A KILL here is a KILL *at ₹1 lakh*, not a proof the signal is dead at scale.

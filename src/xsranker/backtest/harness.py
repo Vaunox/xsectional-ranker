@@ -9,8 +9,10 @@ answer BEFORE it runs on the cache:
   (or a DayDropped), net-returns it at both corridor bounds, and draws ``N`` random null
   books through the IDENTICAL execution, net-returning each. A DayDropped null draw is a
   flat book (0.0) — it keeps the per-day null panel rectangular for the benchmark.
-* The frozen cost corridor sets each position's round-trip cost from its Corwin-Schultz
-  spread and its participation; it is composed, never edited.
+* The frozen cost corridor sets each position's round-trip cost. In the live FIXED_SPREAD mode
+  it is size-aware statutory fees (charged at the ₹10k per-name DEPLOYMENT notional, not the
+  liquidity-max book notional) + a fixed NSE-anchored spread; in CS mode (regen) it is the
+  Corwin-Schultz spread + participation impact. It is composed, never edited.
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ from xsranker.backtest.pnl import book_net_return
 from xsranker.core.logging import get_logger
 from xsranker.core.types import OHLCV
 from xsranker.execution.book import Book, DayDropped
-from xsranker.execution.config import CostCorridorConfig, ExecutionConfig
+from xsranker.execution.config import FIXED_SPREAD, CostCorridorConfig, ExecutionConfig
 from xsranker.execution.pipeline import SymbolInputs, build_book
 from xsranker.execution.spread import corwin_schultz_spread
 from xsranker.features.point_in_time import entry_window_value, hold_return
@@ -149,11 +151,18 @@ def _position_costs(
     for p in (*book.longs, *book.shorts):
         sd = by_symbol[p.symbol]
         participation = min(p.notional_inr / sd.inputs.entry_window_value_inr, participation_cap)
+        # FIXED_SPREAD (live): charge the size-aware fees at the ACTUAL per-name deployment notional
+        # (deployment capital / (2*k)), not the liquidity-max book notional the truncation sizes to.
+        # The fee model is size-dependent via the per-order brokerage cap, so a small deployment pays
+        # materially more (bps). CS mode (historical regen) keeps the book notional for stream fidelity.
+        fee_notional = (
+            cost_cfg.deployment_notional_inr if cost_cfg.mode == FIXED_SPREAD else p.notional_inr
+        )
         bounds = cost_corridor(
             cost_model,
             cost_cfg,
             spread=sd.spread,
-            notional=p.notional_inr,
+            notional=fee_notional,
             participation=participation,
             participation_cap=participation_cap,
         )
