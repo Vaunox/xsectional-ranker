@@ -24,6 +24,7 @@ from xsranker.ledger.persistence import (
     LedgerManifest,
     arm_trial_id,
     load_manifest,
+    open_persistent_ledger,
     verify_ledger_integrity,
     write_manifest,
 )
@@ -84,12 +85,21 @@ def test_load_manifest_missing_file_is_empty() -> None:
         assert load_manifest(Path(d) / "nope.yaml").required_trial_ids == ()
 
 
-def test_committed_repo_manifest_loads_and_is_empty_pre_1b() -> None:
-    """The real ledger/MANIFEST.yaml is committed, parses, and is empty until 1B arms it."""
+def test_committed_ledger_is_self_consistent() -> None:
+    """The committed ledger + manifest are internally consistent (post-1B).
+
+    The manifest requires candidate #1's six streams, they are durably present, and the
+    fail-closed guard passes — so a fresh checkout that failed to commit the streams (the
+    R2 failure class) would make THIS test go red.
+    """
     cfg = load_ledger_config(load_settings())
     assert cfg.dir.name == "ledger"
     assert cfg.manifest_path.name == "MANIFEST.yaml"
-    assert load_manifest(cfg.manifest_path).required_trial_ids == ()
+    ledger, manifest = open_persistent_ledger(cfg.dir, cfg.manifest_path)
+    assert set(manifest.required_trial_ids) == {
+        arm_trial_id("cand1", arm, w) for arm in ("A", "A-Z") for w in (15, 30, 45)
+    }
+    verify_ledger_integrity(ledger, manifest)  # passes iff all six streams are committed
 
 
 # --------------------------------------------------------------------------- #
