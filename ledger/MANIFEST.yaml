@@ -6,3 +6,7 @@ candidates:
   - cand1__A-Z__15
   - cand1__A-Z__30
   - cand1__A-Z__45
+  candidate-2r-vresid:
+  - cand2r__V_resid__15
+  - cand2r__V_resid__30
+  - cand2r__V_resid__45

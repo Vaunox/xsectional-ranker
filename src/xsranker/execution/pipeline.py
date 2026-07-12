@@ -100,10 +100,26 @@ def finalize(
 
 
 def build_book(
-    panel: Sequence[SymbolInputs], adapter: HarnessAdapter, cfg: ExecutionConfig
+    panel: Sequence[SymbolInputs],
+    adapter: HarnessAdapter,
+    cfg: ExecutionConfig,
+    *,
+    continuation: bool = False,
 ) -> Book | DayDropped:
-    """Signal book: eligible pools -> rank by the signal (step 3) -> shared finalize."""
+    """Signal book: eligible pools -> rank by the signal (step 3) -> shared finalize.
+
+    ``continuation`` sets the leg direction. REVERSAL (default, candidate #1 gap): LONG the
+    lowest-signal names (biggest gap-downs), SHORT the highest (gap-ups). CONTINUATION (V_resid):
+    LONG the **highest**-signal names (most residual net-buying flow), SHORT the lowest. Only the
+    long/short ordering flips; the shared ``finalize`` and the null are unchanged.
+    """
     long_pool, short_pool, by_symbol = eligible_pools(panel)
-    long_ordered = rank_panel(long_pool, adapter)  # ascending signal (biggest gap-downs)
-    short_ordered = list(reversed(rank_panel(short_pool, adapter)))  # descending (gap-ups)
+    long_asc = rank_panel(long_pool, adapter)  # ascending signal
+    short_asc = rank_panel(short_pool, adapter)
+    if continuation:
+        long_ordered = list(reversed(long_asc))  # descending: highest signal first (long the top)
+        short_ordered = short_asc  # ascending: lowest signal first (short the bottom)
+    else:
+        long_ordered = long_asc  # ascending: lowest signal first (long the biggest gap-downs)
+        short_ordered = list(reversed(short_asc))  # descending: highest first (short the gap-ups)
     return finalize(long_ordered, short_ordered, by_symbol, cfg)

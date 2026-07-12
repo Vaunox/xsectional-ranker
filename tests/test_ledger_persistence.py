@@ -97,10 +97,11 @@ def test_committed_ledger_is_self_consistent() -> None:
     assert cfg.dir.name == "ledger"
     assert cfg.manifest_path.name == "MANIFEST.yaml"
     ledger, manifest = open_persistent_ledger(cfg.dir, cfg.manifest_path)
-    assert set(manifest.required_trial_ids) == {
-        arm_trial_id("cand1", arm, w) for arm in ("A", "A-Z") for w in (15, 30, 45)
-    }
-    verify_ledger_integrity(ledger, manifest)  # passes iff all six streams are committed
+    required = set(manifest.required_trial_ids)
+    # candidate #1's 6 gap arms + candidate-2r-vresid's 3 (subset checks: robust to later candidates)
+    assert {arm_trial_id("cand1", arm, w) for arm in ("A", "A-Z") for w in (15, 30, 45)} <= required
+    assert {f"cand2r__V_resid__{w}" for w in (15, 30, 45)} <= required
+    verify_ledger_integrity(ledger, manifest)  # passes iff every required stream is committed
 
 
 # --------------------------------------------------------------------------- #

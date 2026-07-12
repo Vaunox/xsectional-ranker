@@ -77,7 +77,8 @@ def build_symbol_days(
     symbol: str,
     series: OHLCV,
     *,
-    arm: SignalArm,
+    arm: SignalArm | None = None,
+    signal_override: Mapping[date, float] | None = None,
     entry_minute: int,
     atr_period: int,
     sector: str,
@@ -89,12 +90,21 @@ def build_symbol_days(
 ) -> dict[date, SymbolDay]:
     """Precompute one symbol's per-day record from its OHLCV (point-in-time throughout).
 
+    The ranking signal is either computed from ``arm`` (gap A/A-Z) or injected via
+    ``signal_override`` (a precomputed per-day value — used for V_resid, whose cross-sectional
+    residual cannot be computed one symbol at a time). Exactly one must be given.
+
     ``compute_spread`` computes the Corwin-Schultz spread (``SymbolDay.spread``) — needed ONLY by
     the historical CS corridor (the candidate-#1 ledger regen). The live FIXED_SPREAD corridor
     ignores it, so candidate #2 passes ``compute_spread=False`` and the now-dead CS estimate is
     never computed (``spread`` = 0.0).
     """
-    signal = signal_value_by_day(arm, series, adapter, atr_period=atr_period)
+    if signal_override is not None:
+        signal: Mapping[date, float] = signal_override
+    elif arm is not None:
+        signal = signal_value_by_day(arm, series, adapter, atr_period=atr_period)
+    else:
+        raise ValueError("build_symbol_days needs either arm or signal_override")
     holds = hold_return(series, entry_minute=entry_minute)
     values = entry_window_value(series, entry_minute=entry_minute)
     atr = atr_pct_by_day(series, adapter, atr_period=atr_period)
@@ -210,8 +220,13 @@ def run_arm(
     cost_model: CostModel,
     draws_per_day: int,
     rng: np.random.Generator,
+    continuation: bool = False,
 ) -> ArmRun:
-    """Iterate the arm's days: signal book + N null books, each net-returned at both bounds."""
+    """Iterate the arm's days: signal book + N null books, each net-returned at both bounds.
+
+    ``continuation`` is passed to ``build_book`` for the leg direction (V_resid: LONG the highest
+    signal). The null is direction-agnostic (random), so only the SIGNAL book flips.
+    """
     sig_opt: dict[date, float] = {}
     sig_pess: dict[date, float] = {}
     null_opt: dict[date, tuple[float, ...]] = {}
@@ -231,7 +246,7 @@ def run_arm(
         by_symbol = {sd.inputs.symbol: sd for sd in panel}
         inputs = [sd.inputs for sd in panel]
 
-        book = build_book(inputs, adapter, exec_cfg)
+        book = build_book(inputs, adapter, exec_cfg, continuation=continuation)
         if isinstance(book, DayDropped):
             signal_drops += 1
             continue  # not a surviving day; the null is sliced to surviving days only

@@ -156,5 +156,28 @@ The pre-registered **D8** gate (blind, pre-verdict) correlated the signal *value
 - **vs morning return: Pearson ≈ 0 (exactly — the OLS residual is linearly orthogonal to the regressor by construction); Spearman ~0.11–0.13** (a small nonlinear rank remnant), well inside the < 0.5 **independent** band. The momentum leak that STOPped V is removed.
 - **vs candidate #1 gap: |ρ| ≤ 0.03** — independence from the retired gap axis is preserved (stronger than V's −0.13).
 
-V_resid isolates the ~47% price-orthogonal flow residual and clears both D8 bands. It carries the axis to a verdict run under its own blind pre-registration (`docs/PREREGISTRATION_VOLUME_DELTA_RESIDUAL.md`), pending operator sign-off.
+V_resid isolates the ~47% price-orthogonal flow residual and clears both D8 bands, so it earned a verdict run under its own blind pre-registration (`docs/PREREGISTRATION_VOLUME_DELTA_RESIDUAL.md`, tag `vresid-preregistration`).
+
+## The V_resid verdict — KILL (all 3 arms, a decisive null)
+
+Single blind verdict run (fixed 5/18 bps corridor, N=1000, seed 20260711, CONTINUATION, cumulative ledger):
+
+| arm | beat% | DSR | CPCV median | abs-net bps (opt / pess) | verdict |
+|---|--:|--:|--:|--:|---|
+| V_resid w15 | 46 | 0.00 | −0.10 | −19.9 / −45.9 | KILL |
+| V_resid w30 | 63 | 0.00 | 0.22 | −19.2 / −45.2 | KILL |
+| V_resid w45 | 48 | 0.00 | 0.04 | −18.7 / −44.7 | KILL |
+
+Cumulative **effective-N = 8.97** (candidate #1's 6 arms + V_resid's 3 = 9 raw → 8.97 effective): **D6's clustering assumption held** — V_resid genuinely did not collapse into candidate #1, so the independent-axis claim was correct and the higher (near-additive) DSR bar was properly applied. PBO 0.78.
+
+**A true null, not a cost-eaten edge — two independent, each-sufficient failures:** (1) **no selection edge** — beat-random percentile **46–63** (V_resid ranks the cross-section *at the median of the random null* — a coin flip); DSR 0; CPCV medians ~0. (2) **loses money** — absolute net **−19 bps opt / −45 bps pess**, both bounds. The opt→pess gap (−26 bps) matches the corridor's per-leg spread widening (5→18 bps × 2 legs), so **gross ≈ 0**: there is no gross edge for cost to eat.
+
+### Contrast with candidate #1 — this KILL is cleaner and more definitive
+- **Candidate #1 (gap):** a **real +12.6 bps/day gross edge** (beat% 100, DSR ≈ 1.0) the fee floor destroyed. The *signal existed*; the *economics* killed it (leaving a low-turnover carry-forward lead).
+- **V_resid:** **no edge at all** — ranks no better than random. Nothing to rescue with better cost, exit timing, or turnover. A cleaner, more definitive null.
+
+## Conclusion — the volume-delta axis is exhausted
+**Once the price-momentum contamination is stripped from proxy CVD, the remaining institutional-flow signal has no intraday cross-sectional predictive power on this universe.** Both halves are accounted for: the promising half (V/V-A) was **recycled dead momentum** (D8-retired, ~73% morning-return-equivalent; ORB / breakout are already killed); the genuinely independent half (V_resid, price-orthogonal) is **empty** (verdict KILL). The **TWAP/VWAP slice-persistence hypothesis does not hold here.** Candidate #2 is **fully retired**; per the roadmap this routes to candidate #3 (sector-relative, intraday-reversal form).
+
+**Ledger:** V_resid was RUN and evaluated on returns → **CHARGED** (3 streams durably persisted, `candidate-2r-vresid`; cumulative ledger now 9 arms). V / V-A were return-blind **D8 rejections → NOT charged** (the standing return-blind-screen bright line — `PROGRESS.md`).
 
