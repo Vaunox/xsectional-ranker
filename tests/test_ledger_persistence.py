@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from xsranker.backtest.harness import ArmRun, DayStreams
+from xsranker.backtest.harness import ArmRun, DayStreams, NullHealth
 from xsranker.backtest.report import run_program
 from xsranker.core.config import load_settings
 from xsranker.gate.config import GateThresholds
@@ -58,6 +58,7 @@ def _mk_arm() -> ArmRun:
         signal_day_drops=0,
         null_draw_day_drops=0,
         short_ban_fires=0,
+        null_health=NullHealth(0, 0, 0.0, 0, 0),
     )
 
 

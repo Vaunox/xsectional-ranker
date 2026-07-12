@@ -64,7 +64,11 @@ def truncate(
     gross = min(g_long, g_short)  # smaller leg sets gross (dollar-neutral)
 
     if gross < gross_floor_inr:
-        _log.info("day_dropped", reason="below_gross_floor", gross=gross, floor=gross_floor_inr)
+        # DEBUG, not INFO: a below-floor drop is a routine, expected event and fires on EVERY
+        # sub-floor null rejection (build_random_book's loop) — logging each at INFO floods the
+        # hot path (~500k lines/run). The INFO-level summaries are the arm's day-drop fraction
+        # and the null-health aggregate (run_arm), not the per-occurrence drop.
+        _log.debug("day_dropped", reason="below_gross_floor", gross=gross, floor=gross_floor_inr)
         return DayDropped(f"gross {gross:.2f} < floor {gross_floor_inr:.2f} (liquidity too thin)")
 
     def _positions(leg: Sequence[Candidate], side: Side) -> tuple[Position, ...]:

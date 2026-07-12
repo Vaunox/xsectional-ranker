@@ -85,7 +85,7 @@ def _draw_selection(
 
 def build_random_book(
     panel: Sequence[SymbolInputs], cfg: ExecutionConfig, rng: np.random.Generator
-) -> DrawOutcome:
+) -> tuple[DrawOutcome, int]:
     """One random draw: a valid, FLOOR-CLEARING, disjoint k-long/k-short capped book.
 
     Every constraint is IDENTICAL to the signal book — same eligibility, ⌈k/2⌉ sector cap,
@@ -94,18 +94,29 @@ def build_random_book(
     infeasible OR below the floor is rejected and re-drawn; ``DayDropped`` is returned only
     when no floor-clearing valid book can be drawn at all — a genuinely infeasible day the
     signal shares (shared day-drop, never a zero-pad).
+
+    Returns:
+        ``(outcome, attempts)`` — ``attempts`` is the number of rejection-loop iterations used
+        (1 = accepted first try; ``_MAX_SELECTION_ATTEMPTS`` on a ``DayDropped``). The count
+        drives the per-arm null-health telemetry (``run_arm``) — the observable early-warning
+        for a regression in this loop (the one whose silent failure once produced a false KILL),
+        now that its per-attempt ``day_dropped`` spam is suppressed. The RNG draws and the
+        selection are unchanged — this only observes the loop.
     """
     long_pool, short_pool, by_symbol = eligible_pools(panel)
     lp, sp = set(long_pool), set(short_pool)
-    for _ in range(_MAX_SELECTION_ATTEMPTS):
+    for attempt in range(1, _MAX_SELECTION_ATTEMPTS + 1):
         selection = _draw_selection(lp, sp, by_symbol, cfg, rng)
         if selection is None:
             continue
         longs, shorts = selection
         book = finalize(longs, shorts, by_symbol, cfg)  # the SAME floor the signal clears
         if isinstance(book, Book):
-            return book
-    return DayDropped("no feasible floor-clearing random capped disjoint book")
+            return book, attempt
+    return (
+        DayDropped("no feasible floor-clearing random capped disjoint book"),
+        _MAX_SELECTION_ATTEMPTS,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,7 +159,7 @@ def generate_null_panel(
     draws: dict[date, tuple[DrawOutcome, ...]] = {}
     for day in sorted(day_panels):
         draws[day] = tuple(
-            build_random_book(day_panels[day], cfg, rng) for _ in range(draws_per_day)
+            build_random_book(day_panels[day], cfg, rng)[0] for _ in range(draws_per_day)
         )
     _log.info("null_panel_generated", days=len(draws), draws_per_day=draws_per_day, seed=seed)
     return NullPanel(version=version, seed=seed, draws_per_day=draws_per_day, draws=draws)

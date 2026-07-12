@@ -43,12 +43,28 @@ class ExecutionConfig:
         return -(-self.k_per_leg // self.sector_cap_divisor)
 
 
+#: Cost-corridor modes. ``FIXED_SPREAD`` is the candidate-#2+ standard (verified fees + a
+#: pinned fixed spread; Corwin-Schultz RETIRED from the live path). ``CORWIN_SCHULTZ`` is
+#: retained ONLY for regenerating candidate #1's ledger streams at historical fidelity (the
+#: cost model in force when they were run) — never for a live verdict.
+CORWIN_SCHULTZ = "corwin_schultz"
+FIXED_SPREAD = "fixed_spread"
+
+
 @dataclass(frozen=True, slots=True)
 class CostCorridorConfig:
-    """The two spread multipliers bounding the cost corridor (both frozen)."""
+    """Cost-corridor bounds. ``mode`` selects fees+fixed-spread (live) vs Corwin-Schultz.
 
-    optimistic_spread_multiplier: float
-    pessimistic_spread_multiplier: float
+    In ``FIXED_SPREAD`` mode only the ``*_spread_bps`` are used (round-trip proportional
+    spread; the square-root impact term is zeroed — the fixed spread IS the conservative
+    slippage envelope). In ``CORWIN_SCHULTZ`` mode only the ``*_multiplier`` fields are used.
+    """
+
+    mode: str
+    optimistic_spread_multiplier: float  # CS mode only
+    pessimistic_spread_multiplier: float  # CS mode only
+    optimistic_spread_bps: float  # fixed mode only (round-trip proportional spread, bps)
+    pessimistic_spread_bps: float  # fixed mode only
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,10 +100,13 @@ def load_layer2_config(settings: Settings) -> Layer2Config:
             sector_cap_divisor=int(_req(ex, "sector_cap_divisor", "execution")),
         ),
         cost=CostCorridorConfig(
+            mode=str(_req(cost, "mode", "cost")),
             optimistic_spread_multiplier=float(_req(cost, "optimistic_spread_multiplier", "cost")),
             pessimistic_spread_multiplier=float(
                 _req(cost, "pessimistic_spread_multiplier", "cost")
             ),
+            optimistic_spread_bps=float(_req(cost, "optimistic_spread_bps", "cost")),
+            pessimistic_spread_bps=float(_req(cost, "pessimistic_spread_bps", "cost")),
         ),
         null=NullConfig(draws_per_day=int(_req(null, "draws_per_day", "null"))),
     )

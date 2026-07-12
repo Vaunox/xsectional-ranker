@@ -109,8 +109,18 @@ execution:
   sector_cap_divisor: 2        # ceil(k / divisor) names per sector per leg (frozen Phase 2)
 
 cost:
-  optimistic_spread_multiplier: 1.0    # raw Corwin-Schultz implied spread (frozen Phase 2)
-  pessimistic_spread_multiplier: 3.0   # ~3x implied spread (frozen Phase 2)
+  # Candidate #2+ LIVE STANDARD cost model (RESEARCH_FINDINGS §7.3; pre-registration §8, tag
+  # `candidate-2-preregistration`): verified statutory fees + a pinned FIXED spread. Corwin-
+  # Schultz is RETIRED from the live corridor — it over-reads ~2-3x on the gap-selected names
+  # (§5.3), which produced candidate #1's inflated -74/-220. Pinned BLIND before any cand-#2 run.
+  mode: "fixed_spread"
+  optimistic_spread_bps: 5      # fees + 5 bps round-trip (conservative lower-bound spread)
+  pessimistic_spread_bps: 18    # fees + 18 bps round-trip (AR-median magnitude, uniform; NOT per-name AR)
+  # Corwin-Schultz multipliers — RETAINED ONLY to regenerate candidate #1's ledger streams at
+  # historical fidelity (the cost model in force when they ran). scripts/regenerate_ledger.py
+  # pins CORWIN_SCHULTZ mode explicitly; the LIVE corridor uses `mode` above and never these.
+  optimistic_spread_multiplier: 1.0
+  pessimistic_spread_multiplier: 3.0
 
 # Quoted so the key is the string "null", not a YAML null literal (which parses to
 # None and hides the block from load_layer2_config — a latent Phase-2 parse bug).

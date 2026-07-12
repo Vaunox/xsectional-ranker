@@ -39,16 +39,21 @@ from pathlib import Path
 import numpy as np
 
 from xsranker.backtest.harness import ArmRun, SymbolDay, build_symbol_days, run_arm
+from xsranker.backtest.universe_panel import SessionSeries, cached_session_series
 from xsranker.core.config import Settings, load_settings
 from xsranker.core.logging import configure_logging
 from xsranker.core.types import OHLCV
-from xsranker.data.calendar import entry_bar_indices, regular_session
+from xsranker.data.calendar import entry_bar_indices
 from xsranker.data.config import CircuitConfig
-from xsranker.data.factory import DataContext, build_data_context
+from xsranker.data.factory import build_data_context
 from xsranker.data.universe.circuit import is_circuit_locked_at
 from xsranker.data.universe.eligibility import SecurityStatus, Series, long_eligible, short_eligible
-from xsranker.data.universe.sector_map import sector_of
-from xsranker.execution.config import CostCorridorConfig, ExecutionConfig, load_layer2_config
+from xsranker.execution.config import (
+    CORWIN_SCHULTZ,
+    CostCorridorConfig,
+    ExecutionConfig,
+    load_layer2_config,
+)
 from xsranker.gate.benchmark import excess_over_null_median
 from xsranker.harness.adapter import HarnessAdapter, TrialLedger
 from xsranker.ledger.config import load_ledger_config
@@ -62,6 +67,19 @@ from xsranker.signals.spec import SignalArm
 
 _CANDIDATE = "candidate-1-gap-reversal"
 _CANDIDATE_SHORT = "cand1"
+
+#: The candidate-#1 ledger streams are reproduced under the ORIGINAL Corwin-Schultz corridor
+#: (opt x1 / pess x3) — the cost model in force when they ran — PINNED HERE, not read from the
+#: config's `cost:` block (which is now the live FIXED_SPREAD corridor for candidate #2). This
+#: is the coexistence the operator required: historical CS for the ledger, fixed for the live
+#: run, with no conflation. The bps fields are unused in CS mode.
+_CS_CORRIDOR = CostCorridorConfig(
+    mode=CORWIN_SCHULTZ,
+    optimistic_spread_multiplier=1.0,
+    pessimistic_spread_multiplier=3.0,
+    optimistic_spread_bps=0.0,
+    pessimistic_spread_bps=0.0,
+)
 _WINDOWS = (15, 30, 45)
 _ARMS = (SignalArm.A, SignalArm.A_Z)
 #: Fixed arm order for deterministic regeneration (a fresh rng per arm).
@@ -91,17 +109,6 @@ class _ArmResult:
     short_ban_fires: int
 
 
-def _session_series(ctx: DataContext) -> dict[str, tuple[OHLCV, str]]:
-    """symbol -> (adjusted + regular-session-filtered OHLCV, sector) for every survivor."""
-    start = ctx.config.calendar.regular_start_min
-    end = ctx.config.calendar.regular_end_min
-    out: dict[str, tuple[OHLCV, str]] = {}
-    for sym in ctx.universe.symbols:
-        series = regular_session(ctx.repository.adjusted(sym), start_min=start, end_min=end)
-        out[sym] = (series, sector_of(ctx.sector_map, sym))
-    return out
-
-
 def _circuit_by_day(
     series: OHLCV, entry_minute: int, circuit_cfg: CircuitConfig
 ) -> dict[date, bool]:
@@ -118,7 +125,7 @@ def _circuit_by_day(
 def _run_one_arm(
     arm: SignalArm,
     window: int,
-    series_by_symbol: dict[str, tuple[OHLCV, str]],
+    series_by_symbol: SessionSeries,
     *,
     adapter: HarnessAdapter,
     exec_cfg: ExecutionConfig,
@@ -128,6 +135,7 @@ def _run_one_arm(
     circuit_cfg: CircuitConfig,
     draws: int,
     seed: int,
+    max_days: int | None = None,
 ) -> _ArmResult:
     """Run one arm through the frozen pipeline; return its charged (pessimistic excess) stream."""
     entry_minute = entry_start_min + window
@@ -150,6 +158,8 @@ def _run_one_arm(
             cross_section[d].append(sd)
 
     days = sorted(cross_section)
+    if max_days is not None:
+        days = days[:max_days]  # diagnostic truncation (e.g. the null-median sanity check)
     run: ArmRun = run_arm(
         days,
         cross_section,
@@ -249,12 +259,31 @@ def main() -> None:
         "--draws", type=int, default=None, help="null draws/day (default: config N)"
     )
     parser.add_argument("--dry-run", action="store_true", help="compute + report but do not write")
+    parser.add_argument(
+        "--cost-mode",
+        choices=("cs", "fixed"),
+        default="cs",
+        help="cs = historical Corwin-Schultz (the ledger); fixed = the live fees+fixed corridor "
+        "(DIAGNOSTIC ONLY, e.g. the null-median sanity check — never persisted).",
+    )
+    parser.add_argument(
+        "--max-days",
+        type=int,
+        default=None,
+        help="diagnostic: truncate each arm to the first N surviving days (e.g. the sanity check).",
+    )
     args = parser.parse_args()
+    diagnostic = args.cost_mode == "fixed" or args.max_days is not None
+    if diagnostic and not (args.validate or args.dry_run):
+        raise SystemExit(
+            "--cost-mode fixed / --max-days are DIAGNOSTIC only; candidate #1's ledger is the "
+            "full-panel Corwin-Schultz run. Re-run with --validate or --dry-run."
+        )
 
-    # WARNING level: the frozen pipeline INFO-logs `day_dropped` inside build_random_book's
-    # rejection loop, so at N=1000 unfiltered logging renders ~500k lines in the hot path.
-    # Suppressing it does not change any stream (print() diagnostics are unaffected).
-    configure_logging(level="WARNING", renderer="console")
+    # INFO level: the routine per-drop `day_dropped` log is now DEBUG (it fired ~500k times in
+    # the hot path), so INFO shows the useful per-arm summaries — notably run_arm's `null_health`
+    # aggregate (the observable early-warning for the null's rejection loop) — without the flood.
+    configure_logging(level="INFO", renderer="console")
 
     settings = load_settings()
     layer2 = load_layer2_config(settings)
@@ -264,8 +293,13 @@ def main() -> None:
     if args.validate and args.draws is None:
         draws = 50  # fast reconstruction check (surviving-days/drops are ~N-independent)
 
-    print(f"loading {len(ctx.universe.symbols)} survivors from cache ...", flush=True)
-    series_by_symbol = _session_series(ctx)
+    corridor = _CS_CORRIDOR if args.cost_mode == "cs" else layer2.cost
+    print(
+        f"cost corridor: {args.cost_mode} ({corridor.mode}) | "
+        f"loading {len(ctx.universe.symbols)} survivors from cache ...",
+        flush=True,
+    )
+    series_by_symbol = cached_session_series(ctx)  # pickle-cached: never reload from Parquet twice
 
     results: list[_ArmResult] = []
     for arm, window in _ARM_ORDER:
@@ -278,12 +312,13 @@ def main() -> None:
                 series_by_symbol,
                 adapter=adapter,
                 exec_cfg=layer2.execution,
-                cost_cfg=layer2.cost,
+                cost_cfg=corridor,  # cs (historical, for the ledger) or fixed (diagnostic only)
                 atr_period=layer2.signal.atr_period,
                 entry_start_min=ctx.config.calendar.regular_start_min,
                 circuit_cfg=ctx.config.circuit,
                 draws=draws,
                 seed=settings.seed,
+                max_days=args.max_days,
             )
         )
         print(f"    ... {arm.value} w{window} done in {time.monotonic() - t0:.0f}s", flush=True)

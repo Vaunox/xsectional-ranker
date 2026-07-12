@@ -21,5 +21,23 @@ undercount effective-N. `scripts/regenerate_ledger.py` deterministically regener
 #1's streams (seed `20260711`, frozen machinery) + the cost-realism re-runs, writes them here,
 and arms the manifest — this must be green **before** candidate #2's run.
 
-Trial-id scheme: `cand1:<arm>:<window>` for a base arm (e.g. `cand1:A-Z:30`);
-`cand1:<arm>:<window>:<cost>` for a cost-realism re-run.
+Trial-id scheme: `cand1__<arm>__<window>` for a base arm (e.g. `cand1__A-Z__30`), using `__`
+(not `:`) so the id is a valid filename on Windows (the ledger writes `<trial_id>.json`).
+
+## Reproduction verified (2026-07-12) — a first-class finding
+
+The R2 defect cost us candidate #1's original streams, **but the numbers survive verification.**
+`scripts/regenerate_ledger.py` reproduces RESEARCH_FINDINGS §8 **exactly** (every surviving-day
+count, signal-drop %, null-draw-drop 0%, null median ≈ −234 bps pessimistic, short-ban 0) and
+recomputes **effective-N = 5.9816 at N=1000** (5.9831 at the N=50 validation) — matching the
+historically-reported ~5.98 with no material divergence. Candidate #1's corrected Phase-3 KILL is
+therefore now **verified reproducible from committed code** (it was not before — the ad-hoc run's
+streams were ephemeral), which retroactively validates the corrected Phase-3 close.
+
+## Ledger composition (operator ruling, 2026-07-12)
+
+The ledger counts **independent looks, not re-pricings.** Candidate #1 is **six** streams (six
+selections, each once), regenerated under the original Corwin-Schultz corridor. The cost-realism
+re-runs (fees-only / fees+5bps / fees+AR) were re-pricings of the same six selections — recorded
+in each stream's `params.cost_realism_reruns`, **never as their own rows** (an 18-row ledger would
+inflate the effective-N that sets every future candidate's DSR bar).

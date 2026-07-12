@@ -22,6 +22,7 @@ from datetime import date
 import numpy as np
 
 from xsranker.backtest.pnl import book_net_return
+from xsranker.core.logging import get_logger
 from xsranker.core.types import OHLCV
 from xsranker.execution.book import Book, DayDropped
 from xsranker.execution.config import CostCorridorConfig, ExecutionConfig
@@ -36,6 +37,8 @@ from xsranker.signals.spec import (
     resample_daily,
     signal_value_by_day,
 )
+
+_log = get_logger("backtest.harness")
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,18 +85,27 @@ def build_symbol_days(
     short_eligible: bool,
     circuit_locked_by_day: Mapping[date, bool],
     adapter: HarnessAdapter,
+    compute_spread: bool = True,
 ) -> dict[date, SymbolDay]:
-    """Precompute one symbol's per-day record from its OHLCV (point-in-time throughout)."""
+    """Precompute one symbol's per-day record from its OHLCV (point-in-time throughout).
+
+    ``compute_spread`` computes the Corwin-Schultz spread (``SymbolDay.spread``) — needed ONLY by
+    the historical CS corridor (the candidate-#1 ledger regen). The live FIXED_SPREAD corridor
+    ignores it, so candidate #2 passes ``compute_spread=False`` and the now-dead CS estimate is
+    never computed (``spread`` = 0.0).
+    """
     signal = signal_value_by_day(arm, series, adapter, atr_period=atr_period)
     holds = hold_return(series, entry_minute=entry_minute)
     values = entry_window_value(series, entry_minute=entry_minute)
     atr = atr_pct_by_day(series, adapter, atr_period=atr_period)
-    spreads = _spread_by_day(series)
+    spreads = _spread_by_day(series) if compute_spread else {}
 
     out: dict[date, SymbolDay] = {}
     for d in signal:
         # a day contributes only if every point-in-time input it needs exists
-        if d not in holds or d not in values or d not in atr or d not in spreads:
+        if d not in holds or d not in values or d not in atr:
+            continue
+        if compute_spread and d not in spreads:
             continue
         out[d] = SymbolDay(
             inputs=SymbolInputs(
@@ -107,7 +119,7 @@ def build_symbol_days(
                 circuit_locked=bool(circuit_locked_by_day.get(d, False)),
             ),
             hold=holds[d],
-            spread=spreads[d],
+            spread=spreads[d] if compute_spread else 0.0,
         )
     return out
 
@@ -129,12 +141,11 @@ def _position_costs(
         participation = min(p.notional_inr / sd.inputs.entry_window_value_inr, participation_cap)
         bounds = cost_corridor(
             cost_model,
-            sd.spread,
+            cost_cfg,
+            spread=sd.spread,
             notional=p.notional_inr,
             participation=participation,
             participation_cap=participation_cap,
-            optimistic_multiplier=cost_cfg.optimistic_spread_multiplier,
-            pessimistic_multiplier=cost_cfg.pessimistic_spread_multiplier,
         )
         opt[p.symbol] = bounds.optimistic_fraction
         pess[p.symbol] = bounds.pessimistic_fraction
@@ -155,6 +166,28 @@ def _book_returns(
 
 
 @dataclass(frozen=True, slots=True)
+class NullHealth:
+    """Aggregate telemetry for the null's rejection-sampling loop (observability, not a gate).
+
+    The early-warning for a regression in ``build_random_book`` — the loop whose silent failure
+    once zero-padded ~half the draws and manufactured a false KILL. A healthy null accepts almost
+    every draw first try (``mean_attempts`` ≈ 1, ``ceiling_hits`` = 0); a rising rejection rate or
+    ceiling hits is the tell that the feasibility of a floor-clearing random book is degrading.
+    """
+
+    total_draws: int
+    rejections: int  # draws that needed > 1 attempt
+    mean_attempts: float
+    max_attempts: int
+    ceiling_hits: int  # draws that exhausted _MAX_SELECTION_ATTEMPTS -> DayDropped
+
+    @property
+    def rejection_rate(self) -> float:
+        """Fraction of draws that needed more than one attempt."""
+        return self.rejections / self.total_draws if self.total_draws else 0.0
+
+
+@dataclass(frozen=True, slots=True)
 class ArmRun:
     """The raw per-day net-return streams for one arm at both cost bounds + run counters."""
 
@@ -164,6 +197,7 @@ class ArmRun:
     signal_day_drops: int
     null_draw_day_drops: int
     short_ban_fires: int  # short-ineligible names that were nonetheless shorted (expect 0)
+    null_health: NullHealth
 
 
 def run_arm(
@@ -185,6 +219,10 @@ def run_arm(
     signal_drops = 0
     null_drops = 0
     short_ban_fires = 0
+    null_total = 0
+    null_attempts_sum = 0
+    null_attempts_max = 0
+    null_rejections = 0
 
     for d in days:
         panel = list(cross_section.get(d, ()))
@@ -206,7 +244,12 @@ def run_arm(
         day_null_opt: list[float] = []
         day_null_pess: list[float] = []
         for _ in range(draws_per_day):
-            nb = build_random_book(inputs, exec_cfg, rng)
+            nb, attempts = build_random_book(inputs, exec_cfg, rng)
+            null_total += 1
+            null_attempts_sum += attempts
+            null_attempts_max = max(null_attempts_max, attempts)
+            if attempts > 1:
+                null_rejections += 1
             if isinstance(nb, DayDropped):
                 null_drops += 1
                 day_null_opt.append(0.0)
@@ -221,6 +264,24 @@ def run_arm(
         null_opt[d] = tuple(day_null_opt)
         null_pess[d] = tuple(day_null_pess)
 
+    null_health = NullHealth(
+        total_draws=null_total,
+        rejections=null_rejections,
+        mean_attempts=(null_attempts_sum / null_total) if null_total else 0.0,
+        max_attempts=null_attempts_max,
+        ceiling_hits=null_drops,  # a DayDropped draw exhausted the retry ceiling
+    )
+    # INFO aggregate (the per-attempt day_dropped spam is suppressed): the observable
+    # early-warning for a regression in the null's rejection loop.
+    _log.info(
+        "null_health",
+        total_draws=null_health.total_draws,
+        rejections=null_health.rejections,
+        rejection_rate=round(null_health.rejection_rate, 6),
+        mean_attempts=round(null_health.mean_attempts, 4),
+        max_attempts=null_health.max_attempts,
+        ceiling_hits=null_health.ceiling_hits,
+    )
     return ArmRun(
         optimistic=DayStreams(sig_opt, null_opt),
         pessimistic=DayStreams(sig_pess, null_pess),
@@ -228,4 +289,5 @@ def run_arm(
         signal_day_drops=signal_drops,
         null_draw_day_drops=null_drops,
         short_ban_fires=short_ban_fires,
+        null_health=null_health,
     )

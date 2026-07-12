@@ -23,7 +23,7 @@ from xsranker.backtest.harness import SymbolDay, build_symbol_days, run_arm
 from xsranker.backtest.report import run_program
 from xsranker.core.config import load_settings
 from xsranker.core.types import IST_OFFSET_NS, OHLCV
-from xsranker.execution.config import CostCorridorConfig, ExecutionConfig
+from xsranker.execution.config import FIXED_SPREAD, CostCorridorConfig, ExecutionConfig
 from xsranker.execution.pipeline import SymbolInputs
 from xsranker.gate.config import GateThresholds
 from xsranker.harness.adapter import HarnessAdapter
@@ -32,7 +32,13 @@ from xsranker.signals.spec import SignalArm
 EXEC = ExecutionConfig(
     k_per_leg=2, participation_cap=0.01, gross_floor_inr=1_000.0, sector_cap_divisor=2
 )
-COST = CostCorridorConfig(optimistic_spread_multiplier=1.0, pessimistic_spread_multiplier=3.0)
+COST = CostCorridorConfig(
+    mode=FIXED_SPREAD,
+    optimistic_spread_multiplier=1.0,
+    pessimistic_spread_multiplier=3.0,
+    optimistic_spread_bps=5.0,
+    pessimistic_spread_bps=18.0,
+)
 THRESH = GateThresholds(
     null_percentile=95.0,
     dsr_min=0.95,
@@ -133,6 +139,48 @@ def test_skilled_signal_detected_and_arms_cluster_end_to_end() -> None:
     assert prog.raw_arm_count == 2
     assert 1.0 <= prog.effective_trials < 2.0
     assert np.isfinite(prog.pbo.pbo)  # PBO computes (its value is a 2-arm/tiny-split artifact here)
+
+
+def test_run_arm_reports_null_health() -> None:
+    """The per-arm null-health aggregate is populated and healthy on a feasible panel — the
+    observable early-warning for the rejection loop (replaces the suppressed per-attempt spam)."""
+    r = np.random.default_rng(11)
+    run = run_arm(
+        DAYS,
+        _skilled_cross(0.6 + r.random(40)),
+        adapter=_adapter(),
+        exec_cfg=EXEC,
+        cost_cfg=COST,
+        cost_model=_adapter().load_cost_model(),
+        draws_per_day=25,
+        rng=np.random.default_rng(20260711),
+    )
+    h = run.null_health
+    assert h.total_draws == len(run.pessimistic.signal_by_day) * 25  # N nulls per surviving day
+    assert h.mean_attempts >= 1.0 and h.max_attempts >= 1
+    assert h.ceiling_hits == 0  # no draw exhausted the retry ceiling on a feasible panel
+    assert 0.0 <= h.rejection_rate <= 1.0
+
+
+def test_build_symbol_days_can_skip_the_dead_cs_spread(build_ohlcv) -> None:
+    """compute_spread=False drops the now-dead Corwin-Schultz estimate (the live FIXED corridor
+    ignores it); the same days are produced, each with spread 0.0."""
+    dates = [date(2024, 1, 1) + timedelta(days=i) for i in range(25)]
+    series = build_ohlcv("SYM", dates, bars_per_day=6)
+    common = {
+        "arm": SignalArm.A,
+        "entry_minute": 575,
+        "atr_period": 20,
+        "sector": "IT",
+        "long_eligible": True,
+        "short_eligible": True,
+        "circuit_locked_by_day": {},
+        "adapter": _adapter(),
+    }
+    with_cs = build_symbol_days("SYM", series, **common, compute_spread=True)
+    without_cs = build_symbol_days("SYM", series, **common, compute_spread=False)
+    assert without_cs and with_cs.keys() == without_cs.keys()
+    assert all(sd.spread == 0.0 for sd in without_cs.values())
 
 
 def _no_edge_cross(seed: int):

@@ -73,7 +73,7 @@ def test_same_selection_yields_byte_identical_book() -> None:
         _sym("S2", 0.05, "Metals", le=False),
     ]
     signal_book = build_book(panel, _adapter(), CFG)
-    null_book = build_random_book(panel, CFG, np.random.default_rng(123))
+    null_book, _ = build_random_book(panel, CFG, np.random.default_rng(123))
     assert isinstance(signal_book, Book) and isinstance(null_book, Book)
 
     # identical economic book: same gross, same {name, weight, notional} per leg
@@ -108,7 +108,7 @@ def test_random_null_book_is_feasible_on_every_draw() -> None:
     Book, never a DayDropped. Before the fix ~50% of draws were infeasible and zero-padded."""
     panel = _rich_panel()  # 8 distinct-sector names, k=2 -> a valid disjoint 2+2 book exists
     drops = sum(
-        isinstance(build_random_book(panel, CFG, np.random.default_rng(seed)), DayDropped)
+        isinstance(build_random_book(panel, CFG, np.random.default_rng(seed))[0], DayDropped)
         for seed in range(300)
     )
     assert drops == 0
@@ -116,7 +116,7 @@ def test_random_null_book_is_feasible_on_every_draw() -> None:
 
 def test_random_null_book_respects_the_cap_and_disjointness() -> None:
     """The random book obeys the SAME ⌈k/2⌉ sector cap + disjoint legs as the signal book."""
-    book = build_random_book(_rich_panel(), CFG, np.random.default_rng(1))
+    book, _ = build_random_book(_rich_panel(), CFG, np.random.default_rng(1))
     assert isinstance(book, Book)
     longs = {p.symbol for p in book.longs}
     shorts = {p.symbol for p in book.shorts}
@@ -139,7 +139,7 @@ def test_null_and_signal_share_a_genuinely_infeasible_day() -> None:
         _sym("C", 0.04, "IT"),
         _sym("D", 0.05, "IT"),
     ]
-    assert isinstance(build_random_book(panel, CFG, np.random.default_rng(0)), DayDropped)
+    assert isinstance(build_random_book(panel, CFG, np.random.default_rng(0))[0], DayDropped)
     assert isinstance(build_book(panel, _adapter(), CFG), DayDropped)  # the signal shares it
 
 
@@ -156,7 +156,7 @@ def test_null_book_must_clear_the_same_floor_as_the_signal() -> None:
         _sym("C", 0.04, "FMCG", ewv=1_000.0),
         _sym("D", 0.05, "Metals", ewv=1_000.0),
     ]
-    assert isinstance(build_random_book(panel, cfg, np.random.default_rng(0)), DayDropped)
+    assert isinstance(build_random_book(panel, cfg, np.random.default_rng(0))[0], DayDropped)
     assert isinstance(build_book(panel, _adapter(), cfg), DayDropped)  # the signal shares the floor
 
 
@@ -165,7 +165,7 @@ def test_null_endures_circuit_and_mask_like_the_signal() -> None:
     panel[0] = _sym("A", -0.06, "IT", locked=True)  # circuit-locked
     panel[7] = _sym("H", 0.06, "Cement", se=False)  # short-ineligible
     for _ in range(50):
-        book = build_random_book(panel, CFG, np.random.default_rng(_))
+        book, _ = build_random_book(panel, CFG, np.random.default_rng(_))
         if isinstance(book, DayDropped):
             continue
         names = {p.symbol for p in book.longs + book.shorts}
