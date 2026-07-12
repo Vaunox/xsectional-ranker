@@ -22,9 +22,7 @@ from __future__ import annotations
 
 from datetime import date
 
-import numpy as np
-from scipy import stats
-
+from xsranker.backtest.independence_screen import FeatureByDay, band, corr_summary
 from xsranker.backtest.universe_panel import SessionSeries, cached_session_series
 from xsranker.core.config import load_settings
 from xsranker.core.logging import configure_logging
@@ -39,9 +37,6 @@ from xsranker.signals.volume_delta import signal_value_by_day as vd_signal_by_da
 
 _WINDOWS = (15, 30, 45)
 _REGULAR_START_MIN = 555  # 09:15 IST
-_MIN_XS = 10  # minimum names in a day's cross-section for a meaningful correlation
-
-FeatureByDay = dict[str, dict[date, float]]  # symbol -> {day -> value}
 
 
 def _morning_return_by_day(series_by_symbol: SessionSeries, entry_minute: int) -> FeatureByDay:
@@ -82,51 +77,6 @@ def _features(
     }
 
 
-def _cross_sections(x: FeatureByDay, y: FeatureByDay) -> list[tuple[np.ndarray, np.ndarray]]:
-    """Per-day aligned (x, y) arrays over the symbols present in BOTH, for days with >= _MIN_XS."""
-    days: set[date] = set()
-    for sym in x.keys() & y.keys():
-        days |= x[sym].keys() & y[sym].keys()
-    out: list[tuple[np.ndarray, np.ndarray]] = []
-    for d in sorted(days):
-        pairs = [(x[s][d], y[s][d]) for s in x.keys() & y.keys() if d in x[s] and d in y[s]]
-        if len(pairs) >= _MIN_XS:
-            arr = np.asarray(pairs, dtype=np.float64)
-            out.append((arr[:, 0], arr[:, 1]))
-    return out
-
-
-def _corr_summary(x: FeatureByDay, y: FeatureByDay) -> dict[str, float]:
-    """Per-day cross-sectional (mean) + pooled Pearson/Spearman between features x and y."""
-    xs = _cross_sections(x, y)
-    per_day_p, per_day_s = [], []
-    pooled_x, pooled_y = [], []
-    for xi, yi in xs:
-        pooled_x.append(xi)
-        pooled_y.append(yi)
-        if np.std(xi) > 0 and np.std(yi) > 0:
-            per_day_p.append(float(stats.pearsonr(xi, yi)[0]))
-            per_day_s.append(float(stats.spearmanr(xi, yi)[0]))
-    px, py = np.concatenate(pooled_x), np.concatenate(pooled_y)
-    return {
-        "n_days": float(len(xs)),
-        "n_obs": float(px.size),
-        "xs_pearson_mean": float(np.mean(per_day_p)) if per_day_p else float("nan"),
-        "xs_spearman_mean": float(np.mean(per_day_s)) if per_day_s else float("nan"),
-        "pooled_pearson": float(stats.pearsonr(px, py)[0]),
-        "pooled_spearman": float(stats.spearmanr(px, py)[0]),
-    }
-
-
-def _band(rank_corr: float) -> str:
-    a = abs(rank_corr)
-    if a >= 0.8:
-        return "PROXY/RE-SKIN (>=0.8)"
-    if a < 0.5:
-        return "independent (<0.5)"
-    return "STOP 0.5-0.8"
-
-
 def main() -> None:
     configure_logging(level="WARNING", renderer="console")
     settings = load_settings()
@@ -151,11 +101,11 @@ def main() -> None:
     for w in _WINDOWS:
         feats = _features(series_by_symbol, adapter, _REGULAR_START_MIN + w, atr_period)
         for xk, yk, label in comparisons:
-            s = _corr_summary(feats[xk], feats[yk])
+            s = corr_summary(feats[xk], feats[yk])
             print(
                 f"{w:>6} {f'{xk} {label}':>34} {int(s['n_days']):>7} "
                 f"{s['xs_pearson_mean']:>11.3f} {s['xs_spearman_mean']:>12.3f} "
-                f"{s['pooled_pearson']:>9.3f} {s['pooled_spearman']:>9.3f}  {_band(s['xs_spearman_mean'])}"
+                f"{s['pooled_pearson']:>9.3f} {s['pooled_spearman']:>9.3f}  {band(s['xs_spearman_mean'])}"
             )
 
 
