@@ -34,7 +34,7 @@ from xsranker.features.point_in_time import entry_window_return
 from xsranker.harness.adapter import HarnessAdapter
 from xsranker.signals.spec import SignalArm, gap_pct_by_day
 from xsranker.signals.spec import signal_value_by_day as gap_signal_by_day
-from xsranker.signals.volume_delta import VolumeDeltaArm
+from xsranker.signals.volume_delta import VolumeDeltaArm, cross_sectional_residual
 from xsranker.signals.volume_delta import signal_value_by_day as vd_signal_by_day
 
 _WINDOWS = (15, 30, 45)
@@ -68,12 +68,17 @@ def _features(
         va[sym] = vd_signal_by_day(VolumeDeltaArm.V_A, series, entry_minute=entry_minute)
         gap[sym] = gap_pct_by_day(series, adapter)
         gaz[sym] = gap_signal_by_day(SignalArm.A_Z, series, adapter, atr_period=atr_period)
+    mr = _morning_return_by_day(series_by_symbol, entry_minute)
+    # V_resid: per-day cross-sectional residual of V on the morning return (the D8-STOP fix) —
+    # directional flow orthogonal to the morning price move by construction.
+    v_resid = cross_sectional_residual(v, mr)
     return {
         "V": v,
         "V-A": va,
+        "V_resid": v_resid,
         "gap": gap,
         "gap/ATR": gaz,
-        "morning_return": _morning_return_by_day(series_by_symbol, entry_minute),
+        "morning_return": mr,
     }
 
 
@@ -134,8 +139,10 @@ def main() -> None:
     comparisons = [
         ("V", "morning_return", "vs morning return"),
         ("V-A", "morning_return", "vs morning return"),
+        ("V_resid", "morning_return", "vs morning return"),  # the fix: expect ~0 by construction
         ("V", "gap", "vs candidate #1 gap"),
         ("V-A", "gap/ATR", "vs candidate #1 gap"),
+        ("V_resid", "gap", "vs candidate #1 gap"),  # expect to stay low
     ]
     print(
         f"\n{'window':>6} {'comparison':>34} {'n_days':>7} "

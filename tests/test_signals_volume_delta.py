@@ -13,7 +13,11 @@ from datetime import date, timedelta
 import numpy as np
 
 from xsranker.core.types import OHLCV
-from xsranker.signals.volume_delta import VolumeDeltaArm, signal_value_by_day
+from xsranker.signals.volume_delta import (
+    VolumeDeltaArm,
+    cross_sectional_residual,
+    signal_value_by_day,
+)
 
 # 09:15..09:35 IST; entry_minute 570 (09:30) -> window = {555,560,565,570}, 575 is POST-entry.
 _MINUTES = (555, 560, 565, 570, 575)
@@ -127,3 +131,24 @@ def test_teeth_including_the_post_entry_bar_would_change_v() -> None:
     )  # includes the 999-volume 'u' bar
     d = next(iter(windowed))
     assert windowed[d] != reached_past[d]
+
+
+def test_cross_sectional_residual_is_orthogonal_to_the_control() -> None:
+    """V_resid: the per-day OLS residual is orthogonal (Pearson ~0) to the control BY CONSTRUCTION,
+    so ranking on it removes the morning-return leak — the D8-STOP fix."""
+    rng = np.random.default_rng(0)
+    days = [date(2024, 1, 1), date(2024, 1, 2)]
+    names = [f"S{i}" for i in range(15)]
+    control: dict[str, dict[date, float]] = {n: {} for n in names}
+    signal: dict[str, dict[date, float]] = {n: {} for n in names}
+    for d in days:
+        x = rng.normal(size=15)
+        y = 0.7 * x + rng.normal(0.0, 0.1, 15)  # signal heavily driven by the control
+        for n, xi, yi in zip(names, x, y, strict=True):
+            control[n][d] = float(xi)
+            signal[n][d] = float(yi)
+    resid = cross_sectional_residual(signal, control)
+    for d in days:
+        xr = np.array([control[n][d] for n in names])
+        rr = np.array([resid[n][d] for n in names])
+        assert abs(float(np.corrcoef(xr, rr)[0, 1])) < 1e-9  # residual _|_ control (OLS)

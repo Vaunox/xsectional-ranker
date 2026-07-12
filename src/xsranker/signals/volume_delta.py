@@ -22,6 +22,8 @@ entry bar, or any future day, cannot change a day's value (the load-bearing D8/l
 
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Mapping
 from datetime import date
 from enum import StrEnum
 
@@ -96,4 +98,39 @@ def signal_value_by_day(
         baseline = float(np.median(totals[i - baseline_lookback : i]))  # strictly prior days
         if baseline > 0.0:
             out[d] = signed[d] / baseline
+    return out
+
+
+def cross_sectional_residual(
+    signal: Mapping[str, Mapping[date, float]],
+    control: Mapping[str, Mapping[date, float]],
+    *,
+    min_names: int = 10,
+) -> dict[str, dict[date, float]]:
+    """Residualize ``signal`` on ``control`` across each day's cross-section (OLS) — for V_resid.
+
+    On each day, fit ``signal ~ a + b·control`` across the names present in both, and return the
+    per-name **residual** ``signal - (a + b·control)``. The residual is orthogonal (least-squares)
+    to the control BY CONSTRUCTION, so ranking on it isolates the part of ``signal`` the control
+    does not explain — here, directional flow orthogonal to the morning price move (the leak D8
+    found in raw V). Days with fewer than ``min_names`` names are omitted; a constant control on a
+    day degenerates to a simple demean. Point-in-time: uses only that day's cross-section, so it
+    inherits ``signal``/``control``'s own prefix-invariance (no new look-ahead across days).
+    """
+    by_day: dict[date, list[str]] = defaultdict(list)
+    for s in signal.keys() & control.keys():
+        for d in signal[s].keys() & control[s].keys():
+            by_day[d].append(s)
+    out: dict[str, dict[date, float]] = {}
+    for d, names in by_day.items():
+        if len(names) < min_names:
+            continue
+        y = np.array([signal[s][d] for s in names], dtype=np.float64)
+        x = np.array([control[s][d] for s in names], dtype=np.float64)
+        if float(np.std(x)) > 0.0:
+            resid = y - np.polyval(np.polyfit(x, y, 1), x)  # y - (a + b·x)
+        else:
+            resid = y - float(np.mean(y))  # constant control that day -> just demean
+        for s, r in zip(names, resid, strict=True):
+            out.setdefault(s, {})[d] = float(r)
     return out

@@ -117,3 +117,44 @@ On this survivor-cache upper bound, the cross-sectional overnight-gap-**reversal
 - **Machinery:** frozen harness vendored @ predecessor `0c5c592` (20 files, hash-tripwired); Layer-3 gate @ `982420d` (+ absolute-net bar); run harness @ `b96fc18`. Null seed **20260711**.
 - **Run:** single blind execution, 6 arms × both cost bounds, no tweak-and-rerun; re-run on the corrected null, then a cost-realism sensitivity re-run — every verdict change flagged to and ruled by the operator before any record was touched.
 - **Stamps (never separable from any "it works" reading):** exploration-grade · survivorship-inflated upper bound · small-size / low-capacity (₹3–5M book, ~10 bps tracking error).
+
+---
+
+# Candidate #2 — Proxy Cumulative Volume Delta: the D8 pre-verdict finding (2026-07-12)
+
+**Pre-registration** `candidate-2-preregistration` @ `3cb7b15`. **Disposition of V / V-A: RETIRED at D8, pre-verdict** (operator-ruled 2026-07-12) — no verdict run; the finding below is their disposition. The price-orthogonalised successor **V_resid** carries the axis forward (`docs/PREREGISTRATION_VOLUME_DELTA_RESIDUAL.md`).
+
+## The finding (first-class, methodological)
+
+**A proxy cumulative-volume-delta signed by each bar's close-vs-open is ~73% rank-equivalent to the morning return — it is substantially volume-weighted momentum, not an independent flow axis.**
+
+The pre-registered **D8** gate (blind, pre-verdict) correlated the signal *values* (no P&L) of raw **V** = (ΣV_up−ΣV_down)/ΣV_total and abnormal **V-A** = V ÷ trailing-median-20d baseline against (a) the morning open→entry return and (b) candidate #1's overnight gap. Per-day **cross-sectional Spearman** (the strategy ranks the cross-section), mean over ~2,800 days:
+
+| signal | vs morning return (w15 / 30 / 45) | vs candidate #1 gap |
+|---|--:|--:|
+| **V** | 0.751 / 0.735 / 0.727 | −0.126 / −0.113 / −0.104 |
+| **V-A** | 0.747 / 0.732 / 0.724 | −0.104 / −0.093 / −0.085 |
+
+- **vs morning return: 0.72–0.75 → the pre-registered 0.5–0.8 STOP band.** V/V-A rank the universe ~73% like the morning price move. **Mechanism:** the bar close-vs-open sign that signs V *is itself a price measure* — a stock drifting up all morning yields mostly up-bars → high V. A verdict on V would be **uninterpretable**: a PASS unclaimable as an independent feature, a FAIL merely re-testing already-dead intraday momentum (ORB / breakout are killed). It would also break the effective-N independence the fusion ensemble depends on.
+- **vs candidate #1 gap: |ρ| ≤ 0.13 → INDEPENDENT.** The flow axis is genuinely distinct from the overnight gap; the ~47% residual variance is real flow information worth **isolating**, not abandoning.
+
+**Why this is a valuable result, not a failure.** It was caught by a *pre-verdict* independence screen — before any backtest — on a widely-used retail "CVD" construction. The disciplined fix is a new signal, **V_resid** (the per-day cross-sectional residual of V on the morning return), pre-registered separately; D8 is re-run on it (corr vs morning return ≈ 0 by construction — verified below) before any V_resid verdict.
+
+## What was spent
+- **No verdict run, no ledger charge for V/V-A.** D8 is a signal-construction diagnostic (correlations), not a DSR trial; V/V-A produced no return stream and are absent from the effective-N ledger.
+- **Cost swap verified in passing:** the live corridor is now fees + fixed 5/18 bps (Corwin-Schultz retired from the live path); the fixed-corridor null median is **~−50 bps** vs CS **−234** (~4.7× less negative). Null-health telemetry healthy (mean attempts ≈ 1.1, ceiling hits 0).
+
+## D8 re-run on V_resid (the fix — the leak is removed)
+
+**V_resid** = the per-day cross-sectional OLS residual of V on the morning return
+(`cross_sectional_residual`). Re-running D8 (mean per-day cross-sectional correlation):
+
+| signal | vs morning return — xs-Pearson / xs-Spearman (w15 / 30 / 45) | vs candidate #1 gap (xs-Spearman) |
+|---|--:|--:|
+| **V_resid** | −0.000 / 0.130 · −0.000 / 0.116 · −0.000 / 0.110 | −0.031 / −0.023 / −0.017 |
+
+- **vs morning return: Pearson ≈ 0 (exactly — the OLS residual is linearly orthogonal to the regressor by construction); Spearman ~0.11–0.13** (a small nonlinear rank remnant), well inside the < 0.5 **independent** band. The momentum leak that STOPped V is removed.
+- **vs candidate #1 gap: |ρ| ≤ 0.03** — independence from the retired gap axis is preserved (stronger than V's −0.13).
+
+V_resid isolates the ~47% price-orthogonal flow residual and clears both D8 bands. It carries the axis to a verdict run under its own blind pre-registration (`docs/PREREGISTRATION_VOLUME_DELTA_RESIDUAL.md`), pending operator sign-off.
+

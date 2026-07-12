@@ -48,6 +48,19 @@
 - Imported harness frozen; never edited; verified per Deep Dive 03.
 - Phase 1 gates Phase 2; a Phase-1 pass is provisional only.
 
+### Ledger-charge policy — the return-blind-screen bright line (operator-ruled 2026-07-12)
+Which constructions charge the effective-N ledger is decided by **whether the step could fish for
+a good result**, not by whether a return stream was persisted (a bookkeeping fact one could dodge):
+- A construction **screened out on a return-blind, pre-registered criterion** — **D8** independence,
+  prefix-invariance, eligibility, data-integrity (bands fixed in advance, never sees returns) — is
+  **NOT charged.** Such a screen cannot select for a lucky pass, and effective-N exists precisely to
+  price the probability of a false PASS.
+- A construction that was **RUN and evaluated on returns is CHARGED, always, even if discarded** —
+  it is a real bite at performance. (Had we run V, seen it fail, then tried V_resid, that second
+  bite must be charged.)
+- First application: candidate #2's **V / V-A were D8-screened out and are NOT charged**; **V_resid**
+  (run on returns) IS charged — cumulative ledger = candidate #1's 6 arms + V_resid's 3.
+
 ---
 
 ## Session log
