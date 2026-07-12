@@ -257,3 +257,36 @@ Three candidates tested (gap, volume-delta, sector-relative); **one banked, and 
 
 **Ledger:** candidate #3 was RUN and evaluated on returns → **CHARGED** (6 streams durably persisted, `candidate-3-sector-relative`; cumulative ledger now **15 arms**, effective-N 13.48). The distinctness screen was return-blind → not itself charged (the standing bright line).
 
+---
+
+# Gap regime-conditioning: a gross-edge SCREEN batch (2026-07-12, charges nothing; rules out, never blesses)
+
+A four-probe **gross-only screen** on data already owned (panel pickle; no null, no DSR, no verdict). Purpose: find where the banked gap edge lives and whether anything independent has a pulse. Discipline: a strong result **authorizes** a pre-registered study, it does not **become** one; the search must be charged to the ledger inside that study.
+
+## The live finding — the banked gap edge is REGIME-CONDITIONAL, confirmed FOUR independent ways
+The 12.63 bps gap A-Z_15 gross (reproduced exactly) is **not flat across regimes — it concentrates where morning dislocation is largest**:
+1. **Market-vol tercile:** low 7.7 → mid 12.3 → **high 23.0** bps (~3x).
+2. **Gap-dispersion tercile:** narrow 7.1 → mid 15.3 → **wide 18.5** bps (~2.6x).
+3. **Abstention gate** (trade only high market-gap-magnitude days): all 12.6 → top-75% 15.4 → top-50% 17.0 → **top-25% 23.0** bps, monotone, hit-rate rising 56.1 -> 58.5%. The top-25% ~23 bps clears even the pessimistic 15.6 break-even (§7.5).
+4. **Exit path** (Probe 4 below): the HIGH-vol column dominates at *every* exit. **"High-vol + hold-to-close" is the combination.**
+
+## Probe 4 — exit-timing: a mechanistic NULL (edge accrues to the close; front-loading FALSIFIED)
+Same gap A-Z_15 book, fixed at entry 09:30; only the exit varies. Median gross bps:
+
+| exit | ALL | LOW-vol | MID-vol | HIGH-vol |
+|---|---|---|---|---|
+| 11:00 | 4.63 | 1.84 | 4.09 | 9.14 |
+| 12:30 | 7.24 | 3.25 | 4.17 | 16.06 |
+| 14:00 | 8.86 | 4.29 | 7.34 | 16.95 |
+| 15:20 (close) | 12.84 | 9.12 | 12.10 | 18.98 |
+
+**The edge accrues MONOTONICALLY to the close (4.6 -> 7.2 -> 8.9 -> 12.8), in every volatility bucket, with no exception.** It is a **slow, full-session convergence — not a morning snap-back**. Holding to close *collects* the edge; every earlier exit *strictly loses* gross. This **explains why intraday-scalping variants of gap reversal fail**: at 11:00 the edge simply has not accrued yet. **Exit-timing is RULED OUT — no study needed** (a real mechanistic finding, not merely a null). The regime gate does NOT stack with early exit: high-vol days are best held to close (19.0 bps).
+
+## Probe 2 — an independent pulse (PARKED)
+Prior-day-range REVERSAL (long low-range, short high-range): **7.5 bps gross, 54% days+, rank-corr vs gap 0.04** — the first axis to show a real edge that is genuinely independent of the banked gap. Weak and below break-even standalone, but a real **fusion-ingredient candidate**. **PARKED** (second priority; fuse if abstention holds). Realized-vol was weaker (4.6 bps / 52%) and gap-confounded (its construction includes today's |gap|) — not a clean test.
+
+## Dispositions
+- **GRADUATED:** the regime-abstention study on the banked gap (its own blind pre-registration; mechanism-derived gate; the full 3-axis x 4-level + exit search charged to the ledger; survivorship-interaction quantified before any verdict is believed).
+- **PARKED:** prior-day-range (independent, weak).
+- **SKIPPED:** options/OI (#5) — a live ~23 bps regime lead exists on owned data; not worth days of chain-aggregation pipeline while that is unresolved.
+- **RULED OUT:** exit-timing.
