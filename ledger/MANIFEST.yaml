@@ -1,0 +1,11 @@
+# Durable trial-ledger manifest (Inviolable Rule 4; R2 fix 2026-07-12).
+#
+# Declares which prior candidates' trial STREAMS must be present in this directory before
+# the gate may judge a new candidate. `verify_ledger_integrity()` FAILS CLOSED (raises
+# LedgerIntegrityError) if any listed trial-id is missing or empty — so a future candidate's
+# DSR is never silently deflated against an under-counted trial history.
+#
+# EMPTY until scripts/regenerate_ledger.py regenerates candidate #1's streams (Increment 1B)
+# and arms this manifest with them. While empty, the fail-closed guard is a no-op (nothing is
+# yet required) — which is correct: candidate #2 is not gated until 1B populates this.
+candidates: {}

@@ -161,3 +161,19 @@ gate:
   cpcv_k_test: 2               # test groups per CPCV combination
   pbo_n_splits: 16             # CSCV blocks — the vendored harness default (DEFAULT_N_SPLITS)
   periods_per_year: 252        # daily trading-day annualization
+
+# --------------------------------------------------------------------------- #
+# Durable effective-N trial ledger (R2 fix, 2026-07-12 — Inviolable Rule 4).     #
+# --------------------------------------------------------------------------- #
+ledger:
+  # The DURABLE, in-repo, COMMITTED trial ledger. The vendored TrialLedger persists one
+  # JSON stream per trial; candidate #1's run wrote them to an EPHEMERAL dir and lost them
+  # (found-and-fixed defect, same class as the null bug) — so effective-N could not cluster
+  # across sessions and the DSR bar was silently undercounted for every future candidate.
+  # This path is the durable replacement; it is NOT under /data/ (which .gitignore ignores),
+  # so it is versioned with the repo. Resolved relative to the repo root.
+  dir: "ledger"
+  # Manifest (under dir) declaring which prior candidates' trial streams MUST be present.
+  # verify_ledger_integrity() FAILS CLOSED if any listed stream is missing/empty — no
+  # silently-undercounted effective-N, ever. Populated by scripts/regenerate_ledger.py.
+  manifest_file: "MANIFEST.yaml"

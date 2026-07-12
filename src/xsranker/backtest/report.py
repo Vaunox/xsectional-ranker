@@ -20,6 +20,7 @@ from xsranker.gate.config import GateThresholds
 from xsranker.gate.program import ProgramPBOReport, program_pbo
 from xsranker.gate.verdict import ArmVerdict, CorridorOutcome, classify_arm, corridor_outcome
 from xsranker.harness.adapter import HarnessAdapter, TrialLedger
+from xsranker.ledger.persistence import LedgerManifest, verify_ledger_integrity
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,8 +87,21 @@ def run_program(
     cpcv_k: int,
     periods_per_year: float,
     pbo_splits: int,
+    manifest: LedgerManifest | None = None,
 ) -> ProgramReport:
-    """Charge all arms, gate each at both bounds, corridor, and run the cross-arm PBO."""
+    """Charge all arms, gate each at both bounds, corridor, and run the cross-arm PBO.
+
+    If ``manifest`` is given, the ledger is verified FAIL-CLOSED first (R2, Rule 4): any
+    required prior-candidate stream that is missing/empty raises ``LedgerIntegrityError``
+    before a single DSR is computed — never a silently-undercounted effective-N.
+
+    Raises:
+        LedgerIntegrityError: if ``manifest`` is given and a required prior stream is absent.
+    """
+    # 0. FAIL CLOSED before anything else: prior candidates' streams must be durably present.
+    if manifest is not None:
+        verify_ledger_integrity(ledger, manifest)
+
     # 1. charge every arm's pessimistic excess stream to the ledger (before any DSR).
     excess_by_arm: dict[str, list[float]] = {}
     for arm_id, ar in arm_runs.items():
