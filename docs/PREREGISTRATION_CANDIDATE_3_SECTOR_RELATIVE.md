@@ -187,3 +187,17 @@ corridor.
    real, uncosted deployment drag and is NOT in the corridor.
 4. **Capital-dependent bar** — the 11.6–15.6 bps break-even is a ₹1L figure; ~6.5 bps at ₹50L (§7.5).
    A KILL here is a KILL *at ₹1 lakh*, not a proof the signal is dead at scale.
+
+### E. VERDICT (run 2026-07-12, single blind run; RESEARCH_FINDINGS "Candidate #3" block)
+**KILL, all 6 arms** (5 KILL + 1 near-threshold; none pass). Gross is positive but ~1 bps
+(0.44–2.41 bps median) at **50–52% days-positive — a coin flip**; **DSR ≈ 0** (indistinguishable
+from noise after deflation); median net **−20 to −31 bps** both bounds → fails the absolute-net gate.
+Cumulative **effective-N 13.48** (15 arms), PBO 0.382. The 6 streams are CHARGED (return-evaluated),
+durably persisted as `candidate-3-sector-relative`.
+
+**NOT banked** (operator ruling). The Entry gate requires a real edge = *statistically distinguishable
+from noise after deflation*, not merely positive-signed; SR's ~1 bps / DSR≈0 / 51%-hit is noise with a
+sign. **Independence without edge is not bankable** — a new standing rule. The re-pin did NOT cause the
+KILL (SR fails even the optimistic 11.6 bps bar by ~10 bps — it dies on its own near-zero gross). The
+sector framing bought distinctness from the gap but no new return. The stable stays at **ONE**
+provisional member (candidate #1 gap).

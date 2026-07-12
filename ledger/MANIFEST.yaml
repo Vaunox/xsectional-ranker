@@ -10,3 +10,10 @@ candidates:
   - cand2r__V_resid__15
   - cand2r__V_resid__30
   - cand2r__V_resid__45
+  candidate-3-sector-relative:
+  - cand3__SR__15
+  - cand3__SR__30
+  - cand3__SR__45
+  - cand3__SR-Z__15
+  - cand3__SR-Z__30
+  - cand3__SR-Z__45

@@ -41,3 +41,19 @@ selections, each once), regenerated under the original Corwin-Schultz corridor. 
 re-runs (fees-only / fees+5bps / fees+AR) were re-pricings of the same six selections — recorded
 in each stream's `params.cost_realism_reruns`, **never as their own rows** (an 18-row ledger would
 inflate the effective-N that sets every future candidate's DSR bar).
+
+## Cumulative composition (2026-07-12) — 15 streams across 3 candidates
+
+Every arm here was **RUN and evaluated on returns** → CHARGED (the standing bright line: return-blind
+screens are not charged; return-evaluated runs always are). Return-blind rejections (V/V-A at D8) are
+**absent by design**, not omitted.
+
+| candidate | streams | trial-ids | verdict |
+|---|---|---|---|
+| `candidate-1-gap-reversal` | 6 | `cand1__{A,A-Z}__{15,30,45}` | KILL (banked provisional feature) |
+| `candidate-2r-vresid` | 3 | `cand2r__V_resid__{15,30,45}` | KILL (empty) |
+| `candidate-3-sector-relative` | 6 | `cand3__{SR,SR-Z}__{15,30,45}` | KILL (independent but empty) |
+
+**Cumulative effective-N = 13.48** at N=1000 (15 raw arms; the correlation-clustered look count that
+deflates every future candidate's DSR bar). Candidate #3 charged under the RE-PINNED corridor
+(RESEARCH_FINDINGS §7.5): size-aware fees @ ₹10k deployment notional + NSE-impact spread 1/5 bps.
