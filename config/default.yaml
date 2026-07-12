@@ -132,6 +132,11 @@ cost:
   pessimistic_spread_bps: 5     # fees + 5 bps round-trip: NSE ₹50L round-trip impact (~4 bps) rounded
                                 # up; conservative since our trade is 500x smaller. SR selection is
                                 # liquidity-NEUTRAL (checked: sel-pctile 0.55), so no worst-name penalty.
+  # UNIT NOTE (RESEARCH_FINDINGS §7.6): the values above are the PER-NAME round-trip cost
+  # (opt 11.6 / pess 15.6 bps). The market-neutral BOOK is 5 long + 5 short and BOTH legs
+  # round-trip, while the quoted GROSS edge is one-leg-normalised, so the BOOK break-even is
+  # 2x per-name = 23.2 / 31.2 bps. `book_net_return` charges 2c correctly; NEVER compare a
+  # one-leg gross to the per-name figure (that mislabel voided the gap-abstention study).
   # Corwin-Schultz multipliers — RETAINED ONLY to regenerate candidate #1's ledger streams at
   # historical fidelity (the cost model in force when they ran). scripts/regenerate_ledger.py
   # pins CORWIN_SCHULTZ mode explicitly; the LIVE corridor uses `mode` above and never these.

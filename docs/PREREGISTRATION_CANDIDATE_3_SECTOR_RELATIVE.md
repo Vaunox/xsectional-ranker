@@ -169,10 +169,12 @@ Re-pinned BLIND to deployment economics (₹1L capital, k=5 → ₹10k/name); fu
 RESEARCH_FINDINGS **§7.5**. **Size-aware fees @ ₹10k = 10.605 bps** + NSE-published-impact spread
 (Abdi-Ranaldo retired like Corwin-Schultz): **optimistic 1 bps, pessimistic 5 bps**.
 
-| bound | break-even gross |
-|---|---|
-| optimistic (fees 10.605 + 1) | **11.60 bps/day** |
-| pessimistic (fees 10.605 + 5) | **15.60 bps/day** |
+| bound | per-name round-trip | **BOOK break-even (= 2×)** |
+|---|---|---|
+| optimistic (fees 10.605 + 1) | 11.605 bps | **23.21 bps/day** |
+| pessimistic (fees 10.605 + 5) | 15.605 bps | **31.21 bps/day** |
+
+**[CORRECTED 2026-07-12, RESEARCH_FINDINGS §7.6]** the book break-even is **2× the per-name cost** (5 long + 5 short, both legs round-trip, gross is one-leg-normalised). SR's ~1 bps gross fails it by ~22–30 bps.
 
 Return-blind liquidity check justifies the tight spread: SR-selected names sit at liquidity percentile
 ~0.55 (slightly deeper than neutral), ₹10k participation ~0.01% of morning volume — **SR does not
@@ -185,8 +187,8 @@ corridor.
 3. **₹10k/name integer-share tracking error is material and uncosted** — at the deployment size the
    share-granularity drag is *worse* than the ~10 bps flagged at candidate #1's floor (§6); it is a
    real, uncosted deployment drag and is NOT in the corridor.
-4. **Capital-dependent bar** — the 11.6–15.6 bps break-even is a ₹1L figure; ~6.5 bps at ₹50L (§7.5).
-   A KILL here is a KILL *at ₹1 lakh*, not a proof the signal is dead at scale.
+4. **Capital-dependent bar** — the **book** break-even is ~23–31 bps at ₹1L (2× per-name, §7.6);
+   ~13 bps at ₹50L. A KILL here is a KILL *at ₹1 lakh*, not a proof the signal is dead at scale.
 
 ### E. VERDICT (run 2026-07-12, single blind run; RESEARCH_FINDINGS "Candidate #3" block)
 **KILL, all 6 arms** (5 KILL + 1 near-threshold; none pass). Gross is positive but ~1 bps
@@ -198,6 +200,6 @@ durably persisted as `candidate-3-sector-relative`.
 **NOT banked** (operator ruling). The Entry gate requires a real edge = *statistically distinguishable
 from noise after deflation*, not merely positive-signed; SR's ~1 bps / DSR≈0 / 51%-hit is noise with a
 sign. **Independence without edge is not bankable** — a new standing rule. The re-pin did NOT cause the
-KILL (SR fails even the optimistic 11.6 bps bar by ~10 bps — it dies on its own near-zero gross). The
+KILL (SR fails even the optimistic **book** bar of 23.2 bps by ~22 bps, §7.6 — it dies on its own near-zero gross). The
 sector framing bought distinctness from the gap but no new return. The stable stays at **ONE**
 provisional member (candidate #1 gap).

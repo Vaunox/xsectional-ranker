@@ -1,6 +1,9 @@
-# Pre-registration — Gap Regime-Abstention Study (FROZEN, blind)
+# Pre-registration — Gap Regime-Abstention Study (FROZEN, then STOOD DOWN)
 
-**Status: FROZEN 2026-07-12 (operator sign-off; all five decisions accepted + two binding additions). Nothing run. No verdict seen. The freeze commit + tag precede the verdict run (provenance). `src/vendored/` pristine; recorded verdicts untouched.**
+> **🛑 STOOD DOWN — NO VERDICT RUN (2026-07-12, operator-confirmed). The premise was a unit error.**
+> The study's motivation — a "~23 bps regime lead that clears the floor" — compared the **one-leg GROSS** (12.6–23 bps) to the **per-name** cost (11.6/15.6). But the book is 5 long + 5 short and both legs round-trip, so the **BOOK break-even is 2× per-name = 23.2 / 31.2 bps** (RESEARCH_FINDINGS §7.6). The best conditioned gross (~23 bps) **never clears the book floor**; the gated book nets **−9.13 / −17.13 bps** (from the runner smoke — absolute-net kills it deterministically and draw-independently, so the survivorship and CI gates never bind). **Disposition: KILL-on-absolute-net; premise-was-a-unit-error.** The runner (`scripts/run_gap_abstention_study.py`) was built and smoke-validated but **the full run was never executed and nothing was charged to the ledger.** The frozen design below is preserved for the provenance trail; **every "break-even 11.6/15.6" in it should read BOOK 23.2/31.2.**
+
+**Status: FROZEN 2026-07-12 (operator sign-off; all five decisions accepted + two binding additions), then STOOD DOWN before any run (see banner). No verdict seen. `src/vendored/` pristine; recorded verdicts untouched.**
 
 This is a **refinement of the BANKED candidate #1** (gap A-Z), not a new independent candidate. It graduates from the 2026-07-12 gross-edge screen (RESEARCH_FINDINGS "Gap regime-conditioning" block), which showed the gap edge is regime-conditional four independent ways. A screen can authorize a study; it cannot be one. **Everything below is pinned from MECHANISM, before any gated verdict exists — explicitly NOT from the eyeballed top-25% cell.**
 

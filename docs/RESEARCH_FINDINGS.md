@@ -95,10 +95,12 @@ Signal and null pass through the **identical** cost function (`_book_returns` �
 New information — the actual deployment size (**₹1 lakh capital, k=5 → ₹10,000 per name**) — changed the corridor materially in **both** directions. Re-pinned BLIND before any candidate-#3 return was seen. The old corridor was wrong two ways at once: fees under-charged, spread wildly over-charged.
 
 **The re-pinned corridor (the live standard going forward):**
-| bound | size-aware fees @ ₹10k | + spread (NSE-anchored) | **break-even gross** |
-|---|---|---|---|
-| optimistic | 10.605 bps | 1 bps | **11.60 bps/day** |
-| pessimistic | 10.605 bps | 5 bps | **15.60 bps/day** |
+| bound | size-aware fees @ ₹10k | + spread (NSE-anchored) | **PER-NAME round-trip** | **BOOK break-even (= 2×)** |
+|---|---|---|---|---|
+| optimistic | 10.605 bps | 1 bps | 11.605 bps | **23.21 bps/day** |
+| pessimistic | 10.605 bps | 5 bps | 15.605 bps | **31.21 bps/day** |
+
+> **UNIT CORRECTION (2026-07-12, operator-confirmed — a first-class methodological fix, see §7.6).** The two figures above are DISTINCT and must never be conflated. The **per-name** round-trip cost is 11.6/15.6 bps. But the strategy trades a **5-long + 5-short book, and BOTH legs round-trip**, while the quoted GROSS edge (12.6 bps) is normalised to **one leg's gross**. So the cost the book actually pays against that gross is **2× the per-name cost = 23.2/31.2 bps** (`book_net_return` charges `Σ_long w·cost + Σ_short w·cost`, pnl.py). **The BOOK break-even is 23.2/31.2 bps, not 11.6/15.6.** Earlier text in this section compared the one-leg gross to the per-name cost; every such comparison is corrected below. **The machinery was never affected** — every recorded *net* used the true 2× book cost (§7.6).
 
 1. **Fees were UNDER-charged — now size-aware at the true deployment notional.** The verified fee model (§7.3) was always size-dependent via the **₹20-per-order brokerage cap**, but the runs priced fees at the *liquidity-max book notional* (~₹0.6–1M/name, the truncation's capacity size) → only **~4–4.5 bps**. Deployment is ₹10k/name, where fees are **10.605 bps round-trip**. Fees are now charged at a pinned `deployment_notional_inr` (= capital / 2k), **decoupled from the capacity sizing** (which still drives the gross-floor day-drop — different question, both notional-independent fractions, §ruling seam 1).
    - **Fees are FLAT at 10.605 bps for any per-name notional below ~₹66,667** (where 0.03% first exceeds the ₹20 cap). **CORRECTION ON THE RECORD (operator, 2026-07-12):** this **kills the idea that k is a fee lever at ₹1L capital** — k=3/5/10 all deploy < ₹66.7k/name and pay the identical 10.605 bps. A prior suggestion that fewer names → lower fees was **wrong at this capital**; k only becomes a fee lever above ~₹67k/name (i.e., much larger capital). Recorded so the dead option is not silently re-proposed.
@@ -107,9 +109,18 @@ New information — the actual deployment size (**₹1 lakh capital, k=5 → ₹
 
 3. **Liquidity-selection check (first-class, return-blind).** Unlike candidate #1 (which longs the *extreme-gap thin tail*, §6), **candidate #3's SR does NOT select the illiquid tail.** Over 2,814 days the SR-traded extremes sit at liquidity **percentile mean 0.547 / median 0.559** (0.5 = neutral) — *slightly deeper* than average, because SR is sector-relative and its most-traded names (SHRIRAMFIN, COALINDIA, BPCL, ONGC, RELIANCE) are ₹45–280 cr/morning. **₹10k participation in even the thinnest selected name: median 0.0104%, worst-ever 1.35%.** This is a **real structural difference between the two signals** and is what *justifies the tight spread bound* — no worst-name penalty is warranted, so the universe-representative NSE regime (already overstated 500×) applies.
 
-4. **THE SMALL-CAPITAL PENALTY (first-class deployment finding — arguably the program's most important economic constraint).** At **₹1 lakh** the break-even bar is **11.6–15.6 bps/day**; at **₹50 lakh/name** it is **~6.5 bps** (fees ~4.5 + comparable small spread) — roughly **half**. The gap is almost entirely the brokerage-cap fee effect. **The same signal can be viable at scale and dead at ₹1 lakh.** Small capital is structurally penalised; this is not a property of any one candidate but of the deployment size, and it stamps every Phase-1 verdict. A signal killed at ₹1L is *not* proven dead at ₹50L — the corridor is a moving, capital-dependent bar.
+4. **THE SMALL-CAPITAL PENALTY (THE PROGRAM'S CENTRAL RESULT — corrected to the 2× book floor, §7.6).** At **₹1 lakh** the **book break-even is ~23–31 bps/day** (2 × per-name 11.6/15.6). The gap gross is 12.6 bps un-gated and tops out at **~23 bps even under the best conditioning** (§ screen) — so it **fails the pessimistic book floor everywhere, and only touches the optimistic floor (23.2) at the single best searched cell**. **There is no gate, regime, or exit configuration where this book nets positive at ₹1 lakh** — the book fee floor alone is ~21 bps (2 × 10.6). At **₹50 lakh** the book fee falls to ~9 bps (2 × ~4.5) and the 12.6 gross nets positive. **This is a capital-scale problem, not a signal problem** — the sharpest, most durable finding the program has produced. It stamps every Phase-1 verdict: a signal killed at ₹1L is *not* proven dead at ₹50L.
 
-**This re-pin does NOT resurrect candidate #1.** Its ~12.6 bps gross would clear the new *optimistic* bar (11.6) by ~1 bps but **fail the pessimistic** (15.6) — and it is survivorship-inflated (§2.1), so its true OOS gross is lower still. **It stays dead.** The corridor change is a cost-model correction that applies to every future candidate, **not a rescue** of a killed one.
+**This re-pin does NOT resurrect candidate #1 — the opposite of a rescue.** Its ~12.6 bps gross fails **both** book bounds (23.2/31.2): the un-gated book nets **−10.6 (opt) / −18.6 (pess) bps**, and it is survivorship-inflated (§2.1) on top. **It stays dead, harder than before.**
+
+### 7.6 The per-name-vs-book cost unit error (first-class methodological correction, 2026-07-12)
+A **wrong number that would have produced a wrong conclusion, caught before it did** — the same class as the null-construction bug (§7.1) and the Corwin-Schultz over-read (§5.3).
+
+**What it was.** §7.5's re-pin correctly computed the **per-name** round-trip cost (fees 10.6 + spread 1/5 = 11.6/15.6 bps) but then compared it to the **one-leg-normalised book GROSS** (12.6 bps) as if it were the break-even. It is not. The book is 5 long + 5 short; **every name pays a round trip**, so `book_net_return` charges `Σ_long w·cost + Σ_short w·cost = 2c`. The **book break-even is 2× the per-name cost = 23.2 / 31.2 bps.** The mislabel made the un-gated gap book look like a ~breakeven "+1 bps over the optimistic floor" when it in fact **nets −10.6 / −18.6 bps**, and made the screen's best cell (top-25%, 23 bps) look like it "cleared the 15.6 floor" when 23 < 31.2 (it nets −0.2 / −8.2).
+
+**What it cost, and did not.** It drove one decision: graduating the **Gap Abstention Study** on a "promising 23 bps lead" that was arithmetic fiction. The study was **stood down before its verdict run** (the smoke's gated net −9.13 / −17.13 exposed it; absolute-net kills it deterministically and draw-independently, so the survivorship and CI gates never bind). Disposition: **KILL-on-absolute-net; premise was a unit error.** It cost **zero** compute past the smoke and **zero** ledger charge (nothing was durably charged).
+
+**The machinery was ALWAYS correct.** Every recorded *net* and *verdict* used the true 2× book cost via `book_net_return`: candidate #1's fees+5 **−7.9**, candidate #3's **−20 to −31**, V_resid's **−19/−45** — all consistent with `gross − 2c`. **No recorded verdict changes.** Only the *narrative* break-even labels in §7.5, the screen block, and the abstention pre-reg were wrong, and are corrected. Standing rule going forward: **always state the per-name cost (11.6/15.6) and the book break-even (23.2/31.2 = 2×) as two distinct figures; never compare a one-leg gross to a per-name cost.**
 
 ## 8. Diagnostics (logged, not gates)
 | arm | surviving days | signal day-drop (₹100k floor) | null-draw-drop | null median net (opt/pess) | short-ban | circuit-flag | sector-conc |
@@ -241,7 +252,7 @@ Cumulative **effective-N = 13.48** (15 raw arms: cand#1 6 + cand#2r 3 + cand#3 6
 
 ## Four first-class findings
 
-1. **The re-pin did NOT manufacture this KILL — the opposite.** SR fails even the *optimistic* 11.6 bps break-even by **~10 bps**. It dies on its own near-zero gross (~1 bps), not on any cost assumption — **estimator-free clean**. The corridor correction (§7.5) was right AND was not needed to kill this; nobody should read the cost change as having caused the death.
+1. **The re-pin did NOT manufacture this KILL — the opposite.** SR fails even the *optimistic* **book** break-even (23.2 bps, §7.6) by **~22 bps** — its ~1 bps gross nets **−22 / −30 bps**. It dies on its own near-zero gross, not on any cost assumption — **estimator-free clean**. The corridor correction (§7.5) was right AND was not needed to kill this; nobody should read the cost change as having caused the death.
 
 2. **High beat-random (71-99) is NOT a reprieve — it is a mean-based rank on a right-skewed stream.** `beat_percentile` ranks the signal's *mean* net within the null; the SR stream is right-skewed (most days lose a little, a few win big), so the mean beats random selection while the **robust median net is decisively negative**. Methodological lesson (sharpens the absolute-net gate, §7.3): **beat-random on a skewed stream can mislead; the median net is the honest absolute statistic.** This is why the absolute-net gate uses the median, and why beat-random is necessary-not-sufficient.
 
@@ -267,7 +278,7 @@ A four-probe **gross-only screen** on data already owned (panel pickle; no null,
 The 12.63 bps gap A-Z_15 gross (reproduced exactly) is **not flat across regimes — it concentrates where morning dislocation is largest**:
 1. **Market-vol tercile:** low 7.7 → mid 12.3 → **high 23.0** bps (~3x).
 2. **Gap-dispersion tercile:** narrow 7.1 → mid 15.3 → **wide 18.5** bps (~2.6x).
-3. **Abstention gate** (trade only high market-gap-magnitude days): all 12.6 → top-75% 15.4 → top-50% 17.0 → **top-25% 23.0** bps, monotone, hit-rate rising 56.1 -> 58.5%. The top-25% ~23 bps clears even the pessimistic 15.6 break-even (§7.5).
+3. **Abstention gate** (trade only high market-gap-magnitude days): all 12.6 → top-75% 15.4 → top-50% 17.0 → **top-25% 23.0** bps, monotone, hit-rate rising 56.1 -> 58.5%. **[CORRECTED §7.6: these are one-leg GROSS; the BOOK break-even is 23.2/31.2 (2× per-name), so even the top-25% 23 bps nets −0.2 (opt) / −8.2 (pess) — it never cleared the floor. The abstention edge was arithmetic fiction.]**
 4. **Exit path** (Probe 4 below): the HIGH-vol column dominates at *every* exit. **"High-vol + hold-to-close" is the combination.**
 
 ## Probe 4 — exit-timing: a mechanistic NULL (edge accrues to the close; front-loading FALSIFIED)
@@ -286,7 +297,8 @@ Same gap A-Z_15 book, fixed at entry 09:30; only the exit varies. Median gross b
 Prior-day-range REVERSAL (long low-range, short high-range): **7.5 bps gross, 54% days+, rank-corr vs gap 0.04** — the first axis to show a real edge that is genuinely independent of the banked gap. Weak and below break-even standalone, but a real **fusion-ingredient candidate**. **PARKED** (second priority; fuse if abstention holds). Realized-vol was weaker (4.6 bps / 52%) and gap-confounded (its construction includes today's |gap|) — not a clean test.
 
 ## Dispositions
-- **GRADUATED:** the regime-abstention study on the banked gap (its own blind pre-registration; mechanism-derived gate; the full 3-axis x 4-level + exit search charged to the ledger; survivorship-interaction quantified before any verdict is believed).
-- **PARKED:** prior-day-range (independent, weak).
-- **SKIPPED:** options/OI (#5) — a live ~23 bps regime lead exists on owned data; not worth days of chain-aggregation pipeline while that is unresolved.
+- **GRADUATED then STOOD DOWN:** the regime-abstention study was pre-registered (`gap-abstention-preregistration`) and its runner built — then **stood down before the verdict run** when the smoke exposed the §7.6 unit error. The "23 bps lead" that motivated it does not clear the **book** floor (23.2/31.2); the gated book nets **−9/−17** → **KILL-on-absolute-net, premise-was-a-unit-error** (§7.6). No compute past the smoke; nothing charged.
+- **PARKED:** prior-day-range (independent, weak; 7.5 bps gross ≪ the 23.2 book floor — a fusion ingredient only, and even fused the book floor is the binding constraint, not the signal).
+- **SKIPPED:** options/OI (#5) — the "live 23 bps lead" was the same one-leg-vs-book unit artifact; there is no lead to chase, so building a chain-aggregation pipeline is unwarranted.
 - **RULED OUT:** exit-timing.
+- **THE STANDING LESSON:** at ₹1 lakh the **book** fee floor (~21 bps) exceeds the gap's best conditioned gross (~23 bps one-leg) — no gate/regime/exit configuration nets positive. This is the capital-scale wall (§7.5 pt 4, §7.6), and it is why every gap-refinement thread terminates here until Phase-4 scale.
